@@ -39,6 +39,6 @@ Imagens, fontes e links de conteúdo existentes foram preservados; alguns são r
 
 A interface não valida credenciais, cria contas reais, envia e-mails, aplica permissões de segurança ou compartilha alterações. Uma nova arquitetura deverá implementar esses comportamentos explicitamente.
 
-Veja `docs/LIMPEZA-FRONTEND.md` para o inventário da limpeza e os resultados de validação.
+Veja `docs/FRONTEND-LOCAL.md` para orientações sobre as interfaces e os dados locais.
 
 Design de origem: [Figma](https://www.figma.com/design/ndHKbtj0cpkcONd9xX7GGN/Escala%C3%AA).
