@@ -22,6 +22,22 @@ test('confirmação da escala é refletida nos dados relacionados', () => {
   previewData('schedule_members', 'update', { response: 'confirmed' }, row => row.id === 'slot-ana');
   assert.equal(previewData('schedules').data[0].schedule_members[0].response, 'confirmed');
 });
+test('cadastro e diretório recebem ministérios ativos com vínculos completos', () => {
+  const ministries = previewData('ministries', 'read', undefined, row => getField(row, 'active') === true).data;
+  assert.ok(ministries.some((ministry: { name: string }) => ministry.name === 'Louvor'));
+  const ana = previewData('profiles', 'read', undefined, row => row.id === 'ana', { single: true }).data;
+  assert.deepEqual(ana.ministry_members.map((member: { ministries: { name: string } }) => member.ministries.name).sort(), ['Louvor', 'Mídia']);
+  const louvor = ministries.find((ministry: { name: string }) => ministry.name === 'Louvor');
+  assert.equal(louvor.schedules.length, 1);
+});
+test('mutações inexistentes falham e exclusões removem vínculos dependentes', () => {
+  const missing = previewData('songs', 'update', { title: 'Nada' }, row => row.id === 'inexistente');
+  assert.ok(missing.error);
+  const ministry = previewData('ministries', 'insert', { name: 'Teste', active: true }, undefined, { single: true }).data;
+  const member = previewData('ministry_members', 'insert', { user_id: 'ana', ministry_id: ministry.id, role: 'volunteer', status: 'approved' }, undefined, { single: true }).data;
+  previewData('ministries', 'delete', undefined, row => row.id === ministry.id);
+  assert.equal(previewData('ministry_members', 'read', undefined, row => row.id === member.id).count, 0);
+});
 test('interface alternativa permite criar e publicar escala sem servidor', () => {
   const id = previewActions.createEvent({ titulo: 'Ensaio', local: 'Igreja', inicioEm: new Date(), fimEm: new Date(Date.now() + 3600000) });
   const scheduleId = previewActions.createDraftSchedule(id, 'louvor');

@@ -3,6 +3,7 @@ import { previewData, getField } from '../mocks/previewData';
 import { PreviewProvider } from '../context/PreviewContext';
 import { usePreview } from '../hooks/usePreview';
 import LoginView from './LoginView';
+import { usePreviewDataRevision } from '../shared/state/dataRevision';
 import { 
   Home, Calendar, Music, MessageSquare, User, Bell, Moon, Sun,
   Flame, CheckCircle2, AlertCircle, Clock, MapPin, Trophy, Gift,
@@ -73,6 +74,8 @@ export default function App() {
 }
 
 function AppInner() {
+  const dataRevision = usePreviewDataRevision(state => state.revision);
+  const pendingRequestsCount = previewData('ministry_members', 'read', undefined, row => row.status === 'pending').count + previewData('schedule_swap_requests', 'read', undefined, row => row.status === 'pending').count;
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [currentView, setCurrentView] = useState('home');
   const [selectedEscala, setSelectedEscala] = useState<any>(null);
@@ -336,7 +339,7 @@ function AppInner() {
               <SidebarItem icon={<Calendar />} label="Escalas" active={currentView === 'admin_escalas' || currentView === 'admin_escala_create'} onClick={() => navigateTo('admin_escalas')} />
               <SidebarItem icon={<User />} label="Voluntários" active={currentView === 'admin_voluntarios' || currentView === 'admin_voluntario_perfil'} onClick={() => navigateTo('admin_voluntarios')} />
               <SidebarItem icon={<Music />} label="Repertório" active={currentView === 'admin_repertorio'} onClick={() => navigateTo('admin_repertorio')} />
-              <SidebarItem icon={<ListChecks />} label="Solicitações" active={currentView === 'admin_solicitacoes'} badge="5" onClick={() => navigateTo('admin_solicitacoes')} />
+              <SidebarItem icon={<ListChecks />} label="Solicitações" active={currentView === 'admin_solicitacoes'} badge={pendingRequestsCount > 0 ? String(pendingRequestsCount) : undefined} onClick={() => navigateTo('admin_solicitacoes')} />
               <SidebarItem icon={<MessageSquare />} label="Feed" active={currentView === 'admin_feed'} onClick={() => navigateTo('admin_feed')} />
               <SidebarItem icon={<PieChart />} label="Relatórios" active={currentView === 'admin_relatorios'} onClick={() => navigateTo('admin_relatorios')} />
             </>
@@ -411,7 +414,7 @@ function AppInner() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar pb-24 md:pb-6">
+        <div key={dataRevision} className="flex-1 overflow-y-auto custom-scrollbar pb-24 md:pb-6">
           {currentView === 'home' && (
             <HomeView 
               navigateTo={navigateTo} 
