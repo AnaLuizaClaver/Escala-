@@ -3,9 +3,11 @@ import { usePreview } from '../hooks/usePreview'
 import { toast } from 'sonner'
 import { Mail, Lock, Eye, EyeOff, LogIn, KeyRound, Sparkles, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
+import { useNavigate } from 'react-router'
 
 export default function LoginView({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
   const { enterApp } = usePreview()
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -37,6 +39,7 @@ export default function LoginView({ onSwitchToRegister }: { onSwitchToRegister: 
 
     setLoading(true)
     enterApp()
+    navigate('/inicio')
     setLoading(false)
     toast.success('Demonstração aberta. Bem-vindo(a).')
   }
@@ -77,7 +80,7 @@ export default function LoginView({ onSwitchToRegister }: { onSwitchToRegister: 
 
       {/* Main Login Card */}
       <div className="bg-card border border-border rounded-3xl p-6 sm:p-8 shadow-sm relative overflow-hidden">
-        <button type="button" onClick={() => enterApp()} className="text-sm font-bold text-primary mb-4">Explorar sem autenticação</button>
+        <button type="button" onClick={() => { enterApp(); navigate('/inicio') }} className="text-sm font-bold text-primary mb-4">Explorar sem autenticação</button>
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Email Field */}
           <div>

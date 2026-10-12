@@ -3,6 +3,10 @@ import { previewData, getField } from '../mocks/previewData';
 import { PreviewProvider } from '../context/PreviewContext';
 import { usePreview } from '../hooks/usePreview';
 import LoginView from './LoginView';
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router';
+import RouteContent from './router/RouteContent';
+import AdminOutlet from './router/AdminOutlet';
+import { isPublicPath, pathForView, viewForPath } from './router/routes';
 import { usePreviewDataRevision } from '../shared/state/dataRevision';
 import { 
   Home, Calendar, Music, MessageSquare, User, Bell, Moon, Sun,
@@ -67,9 +71,7 @@ class ErrorBoundary extends React.Component<any, { hasError: boolean; error?: an
 
 export default function App() {
   return (
-    <PreviewProvider>
-      <AppInner />
-    </PreviewProvider>
+    <BrowserRouter><PreviewProvider><Routes><Route path="/" element={<AppInner />}><Route index element={<Navigate to="/inicio" replace />} /><Route path="inicio" element={<RouteContent />} /><Route path="escalas" element={<RouteContent />} /><Route path="escalas/nova" element={<RouteContent />} /><Route path="escalas/:id" element={<RouteContent />} /><Route path="repertorio" element={<RouteContent />} /><Route path="feed" element={<RouteContent />} /><Route path="ministerios" element={<RouteContent />} /><Route path="conquistas" element={<RouteContent />} /><Route path="notificacoes" element={<RouteContent />} /><Route path="perfil" element={<RouteContent />} /><Route path="configuracoes" element={<RouteContent />} /><Route path="admin" element={<AdminOutlet />}><Route index element={<RouteContent />} /><Route path="ministerios" element={<RouteContent />} /><Route path="ministerios/:id" element={<RouteContent />} /><Route path="escalas" element={<RouteContent />} /><Route path="escalas/nova" element={<RouteContent />} /><Route path="voluntarios" element={<RouteContent />} /><Route path="voluntarios/:id" element={<RouteContent />} /><Route path="solicitacoes" element={<RouteContent />} /><Route path="repertorio" element={<RouteContent />} /><Route path="feed" element={<RouteContent />} /><Route path="relatorios" element={<RouteContent />} /></Route><Route path="login" element={<RouteContent />} /><Route path="cadastro" element={<RouteContent />} /><Route path="recuperar-senha" element={<RouteContent />} /><Route path="escolher-ministerio" element={<RouteContent />} /><Route path="aguardando-aprovacao" element={<RouteContent />} /><Route path="*" element={<Navigate to="/inicio" replace />} /></Route></Routes></PreviewProvider></BrowserRouter>
   )
 }
 
@@ -77,10 +79,13 @@ function AppInner() {
   const dataRevision = usePreviewDataRevision(state => state.revision);
   const pendingRequestsCount = previewData('ministry_members', 'read', undefined, row => row.status === 'pending').count + previewData('schedule_swap_requests', 'read', undefined, row => row.status === 'pending').count;
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [currentView, setCurrentView] = useState('home');
-  const [selectedEscala, setSelectedEscala] = useState<any>(null);
-
-  const [isAdminMode, setIsAdminMode] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const currentView = viewForPath(location.pathname);
+  const isAdminMode = location.pathname.startsWith('/admin');
+  const routeId = decodeURIComponent(location.pathname.split('/').slice(-1)[0] || '');
+  const detailCollection = currentView === 'admin_ministerio_detalhes' ? 'ministries' : currentView === 'admin_voluntario_perfil' ? 'profiles' : 'schedules';
+  const selectedEscala = location.state?.selected || (['detalhes', 'admin_ministerio_detalhes', 'admin_voluntario_perfil'].includes(currentView) ? previewData(detailCollection, 'read', undefined, row => row.id === routeId, { single: true }).data : null);
 
   // Modals state
   const [trocaModalOpen, setTrocaModalOpen] = useState(false);
@@ -107,16 +112,23 @@ function AppInner() {
   };
 
   const navigateTo = (view: string, data?: any) => {
-    setCurrentView(view);
-    if (data) setSelectedEscala(data);
+    navigate(pathForView(view, data), { state: data ? { selected: data } : undefined });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
 
   const { showApp, user, showLogin } = usePreview()
+  const previousShowApp = React.useRef(showApp);
+  useEffect(() => {
+    if (previousShowApp.current !== showApp) {
+      navigate(showApp ? '/inicio' : '/login');
+      previousShowApp.current = showApp;
+    }
+  }, [showApp, navigate]);
 
-  const [authMode, setAuthMode] = useState<'login' | 'register' | 'select_ministry' | 'pending_approval'>('login')
+  const authMode = location.pathname === '/cadastro' ? 'register' : location.pathname === '/escolher-ministerio' ? 'select_ministry' : location.pathname === '/aguardando-aprovacao' ? 'pending_approval' : 'login';
+  const setAuthMode = (mode: 'login' | 'register' | 'select_ministry' | 'pending_approval') => navigate(({ login: '/login', register: '/cadastro', select_ministry: '/escolher-ministerio', pending_approval: '/aguardando-aprovacao' })[mode]);
   const [pendingApprovalMinistries, setPendingApprovalMinistries] = useState<string[]>([])
   const [userProfile, setUserProfile] = useState<any>(null)
   const [userMemberships, setUserMemberships] = useState<any[]>([])
@@ -169,7 +181,7 @@ function AppInner() {
     return () => {
       isMounted = false
     }
-  }, [user?.id])
+  }, [user?.id, dataRevision])
 
   const refreshUserData = async () => {
     if (!user?.id) return
@@ -199,7 +211,7 @@ function AppInner() {
     }
   }
 
-  if (!showApp) {
+  if (!showApp || isPublicPath(location.pathname)) {
     return (
       <div className="flex min-h-screen w-full bg-background text-foreground font-sans overflow-hidden transition-colors duration-300">
         <div className="hidden lg:flex w-[45%] bg-primary flex-col justify-between p-12 relative overflow-hidden text-primary-foreground border-r border-border">
@@ -370,7 +382,7 @@ function AppInner() {
 
         <div className="p-4 border-t border-border/50 bg-background/30 backdrop-blur-sm">
           <div 
-            onClick={() => { setIsAdminMode(!isAdminMode); navigateTo(isAdminMode ? 'home' : 'admin_dashboard'); }}
+            onClick={() => { navigateTo(isAdminMode ? 'home' : 'admin_dashboard'); }}
             className={cn(
               "flex items-center gap-3 px-4 py-3.5 rounded-2xl cursor-pointer transition-colors border",
               isAdminMode ? "bg-primary/10 border-primary text-primary hover:bg-primary/20" : "bg-transparent border-transparent hover:bg-secondary hover:border-border"
@@ -408,6 +420,9 @@ function AppInner() {
             <span className="font-extrabold text-xl tracking-tight">Escalaê</span>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => navigateTo(isAdminMode ? 'home' : 'admin_dashboard')} aria-label={isAdminMode ? 'Abrir área do voluntário' : 'Abrir administração'}>
+              {isAdminMode ? 'Voluntário' : 'Admin'}
+            </Button>
             <Button variant="ghost" size="icon" onClick={toggleTheme}>
               {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </Button>
@@ -415,121 +430,29 @@ function AppInner() {
         </header>
 
         <div key={dataRevision} className="flex-1 overflow-y-auto custom-scrollbar pb-24 md:pb-6">
-          {currentView === 'home' && (
-            <HomeView 
-              navigateTo={navigateTo} 
-              onTrocaClick={() => setTrocaModalOpen(true)}
-              toggleTheme={toggleTheme}
-              isDarkMode={isDarkMode}
-              user={user}
-              userProfile={userProfile}
-              userMemberships={userMemberships}
-              unreadCount={unreadNotificationsCount}
-            />
-          )}
-          {currentView === 'escalas' && (
-            <EscalasView 
-              navigateTo={navigateTo}
-              user={user}
-              userMemberships={userMemberships}
-            />
-          )}
-          {currentView === 'detalhes' && (
-            <DetalhesView 
-              escala={selectedEscala} 
-              onBack={() => navigateTo('escalas')} 
-              onOpenTroca={(slot?: any) => {
-                setSelectedTrocaSlot(slot);
-                setTrocaModalOpen(true);
-              }} 
-              onOpenSong={(s: any) => setSelectedSongModal(s)}
-              user={user}
-              userMemberships={userMemberships}
-            />
-          )}
-          {currentView === 'repertorio' && <RepertorioView onOpenSong={(s: any) => setSelectedSongModal(s)} />}
-          {currentView === 'feed' && <FeedView user={user} userMemberships={userMemberships} />}
-          {currentView === 'ministerios' && (
-            <MeusMinisteriosView 
-              user={user} 
-              userMemberships={userMemberships} 
-              onRefreshMemberships={refreshUserData} 
-            />
-          )}
-          {currentView === 'conquistas' && (
-            <ConquistasView 
-              navigateTo={navigateTo} 
-              user={user} 
-              userMemberships={userMemberships} 
-            />
-          )}
-          {currentView === 'notificacoes' && (
-            <NotificacoesView 
-              navigateTo={navigateTo} 
-              user={user} 
-              userMemberships={userMemberships} 
-            />
-          )}
-          {currentView === 'perfil' && (
-            <PerfilView 
-              navigateTo={navigateTo} 
-              user={user} 
-              userProfile={userProfile} 
-              userMemberships={userMemberships} 
-              onRefreshProfile={refreshUserData} 
-              onSignOut={showLogin} 
-              toggleTheme={toggleTheme} 
-              isDarkMode={isDarkMode} 
-            />
-          )}
-          
-          {/* Admin Views */}
-          {currentView === 'admin_dashboard' && (
-            <AdminDashboardView 
-              navigateTo={navigateTo} 
-              user={user} 
-              userProfile={userProfile} 
-              toggleTheme={toggleTheme} 
-              isDarkMode={isDarkMode} 
-            />
-          )}
-          {currentView === 'admin_ministerios' && <AdminMinisteriosView navigateTo={navigateTo} />}
-          {currentView === 'admin_ministerio_detalhes' && (
-            <AdminMinisterioDetalhesView 
-              ministry={selectedEscala} 
-              navigateTo={navigateTo} 
-            />
-          )}
-          {currentView === 'admin_escalas' && <AdminEscalasView navigateTo={navigateTo} />}
-          {currentView === 'admin_escala_create' && <AdminEscalaCreateView navigateTo={navigateTo} />}
-          {currentView === 'admin_voluntarios' && <AdminVoluntariosView navigateTo={navigateTo} />}
-          {currentView === 'admin_voluntario_perfil' && <AdminVoluntarioPerfilView voluntario={selectedEscala} navigateTo={navigateTo} />}
-          {currentView === 'admin_solicitacoes' && <AdminSolicitacoesView navigateTo={navigateTo} />}
-          {currentView === 'admin_repertorio' && <AdminRepertorioView />}
-          {currentView === 'admin_feed' && <AdminFeedView user={user} userProfile={userProfile} navigateTo={navigateTo} />}
-          {currentView === 'admin_relatorios' && <AdminRelatoriosView navigateTo={navigateTo} />}
-          {currentView === 'configuracoes' && (
-            <ConfiguracoesView 
-              toggleTheme={toggleTheme} 
-              isDarkMode={isDarkMode} 
-              navigateTo={navigateTo} 
-              user={user}
-              userProfile={userProfile}
-              onRefreshProfile={refreshUserData}
-              showLogin={showLogin}
-            />
-          )}
+          <Outlet context={{ currentView, navigateTo, setTrocaModalOpen, toggleTheme, isDarkMode, user, userProfile, userMemberships, unreadNotificationsCount, selectedEscala, setSelectedTrocaSlot, setSelectedSongModal, refreshUserData, showLogin }} />
         </div>
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background/90 backdrop-blur-xl border-t border-border z-30 pb-safe">
-        <div className="flex justify-around items-center px-2 py-3">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background/90 backdrop-blur-xl border-t border-border z-30 pb-safe" aria-label={isAdminMode ? 'Navegação administrativa' : 'Navegação do voluntário'}>
+        <div className="flex justify-around items-center px-2 py-3 overflow-x-auto">
+          {isAdminMode ? <>
+            <BottomNavItem icon={<LayoutDashboard />} label="Painel" active={currentView === 'admin_dashboard'} onClick={() => navigateTo('admin_dashboard')} />
+            <BottomNavItem icon={<Users />} label="Ministérios" active={currentView.startsWith('admin_ministerio')} onClick={() => navigateTo('admin_ministerios')} />
+            <BottomNavItem icon={<Calendar />} label="Escalas" active={currentView.startsWith('admin_escala')} onClick={() => navigateTo('admin_escalas')} />
+            <BottomNavItem icon={<User />} label="Pessoas" active={currentView.startsWith('admin_voluntario')} onClick={() => navigateTo('admin_voluntarios')} />
+            <BottomNavItem icon={<ListChecks />} label="Pedidos" active={currentView === 'admin_solicitacoes'} onClick={() => navigateTo('admin_solicitacoes')} />
+            <BottomNavItem icon={<Music />} label="Músicas" active={currentView === 'admin_repertorio'} onClick={() => navigateTo('admin_repertorio')} />
+            <BottomNavItem icon={<MessageSquare />} label="Feed" active={currentView === 'admin_feed'} onClick={() => navigateTo('admin_feed')} />
+            <BottomNavItem icon={<PieChart />} label="Relatórios" active={currentView === 'admin_relatorios'} onClick={() => navigateTo('admin_relatorios')} />
+          </> : <>
           <BottomNavItem icon={<Home />} label="Início" active={currentView === 'home'} onClick={() => navigateTo('home')} />
           <BottomNavItem icon={<Calendar />} label="Escalas" active={currentView === 'escalas' || currentView === 'detalhes'} onClick={() => navigateTo('escalas')} />
           <BottomNavItem icon={<MessageSquare />} label="Feed" active={currentView === 'feed'} onClick={() => navigateTo('feed')} />
           <BottomNavItem icon={<Music />} label="Repertório" active={currentView === 'repertorio'} onClick={() => navigateTo('repertorio')} />
           <BottomNavItem icon={<User />} label="Perfil" active={currentView === 'perfil' || currentView === 'conquistas'} onClick={() => navigateTo('perfil')} />
+          </>}
         </div>
       </nav>
 

@@ -11,7 +11,7 @@
     "build": "vite build",
     "dev": "vite",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.node.json --noEmit --composite false --incremental false && npm run typecheck:rebuild",
-    "test": "node --test rebuild/web/time.test.ts tests/frontend.test.ts tests/navigation.test.ts",
+    "test": "node --test rebuild/web/time.test.ts tests/frontend.test.ts tests/navigation.test.ts tests/routes.test.ts",
     "build:verify": "npm run build && npm run build:rebuild"
   },
   "dependencies": {
