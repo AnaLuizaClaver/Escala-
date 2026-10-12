@@ -82,11 +82,17 @@ export function Card({ children, className, hoverable = false, onClick }: any) {
   return (
     <Component 
       onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (event: React.KeyboardEvent) => {
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onClick(); }
+      } : undefined}
       whileHover={hoverable ? { y: -4 } : {}}
       transition={{ type: 'spring', stiffness: 300, damping: 20 }}
       className={cn(
         'bg-card border border-border rounded-3xl p-5 sm:p-6 shadow-sm relative overflow-hidden',
         hoverable && 'hover:border-primary/50 transition-colors group cursor-pointer hover:shadow-md',
+        onClick && 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
         className
       )}
     >
@@ -116,17 +122,37 @@ export function Avatar({ src, alt, size = 'md', className, fallback }: any) {
 }
 
 export function Modal({ isOpen, onClose, title, children }: any) {
+  const closeRef = React.useRef<HTMLButtonElement>(null);
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const previous = document.activeElement as HTMLElement | null;
+    closeRef.current?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+      if (event.key !== 'Tab') return;
+      const dialog = closeRef.current?.closest('[role="dialog"]');
+      const focusable = Array.from(dialog?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href]') || []);
+      if (focusable.length === 0) return;
+      const first = focusable[0], last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => { document.removeEventListener('keydown', handleKeyDown); previous?.focus(); };
+  }, [isOpen, onClose]);
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="absolute inset-0" onClick={onClose}></div>
+      <div role="dialog" aria-modal="true" aria-label={title || 'Janela de diálogo'} className="w-full max-w-lg relative z-10">
       <Card className="w-full max-w-lg shadow-2xl relative z-10 animate-in zoom-in-95 duration-200 p-6 sm:p-8">
-        <button onClick={onClose} className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+        <button ref={closeRef} type="button" aria-label="Fechar" onClick={onClose} className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-primary">
           <X className="w-5 h-5" />
         </button>
         {title && <h2 className="text-2xl font-extrabold mb-6 pr-8">{title}</h2>}
         {children}
       </Card>
+      </div>
     </div>
   );
 }
@@ -171,10 +197,10 @@ export function formatTimePtBR(timeStr?: string) {
 
 export function SidebarItem({ icon, label, active, badge, notificationCount, onClick }: any) {
   return (
-    <div 
+    <button type="button" aria-current={active ? 'page' : undefined}
       onClick={onClick}
       className={cn(
-      "flex items-center justify-between px-4 py-3.5 rounded-2xl cursor-pointer transition-all duration-300 group",
+      "flex items-center justify-between w-full text-left px-4 py-3.5 rounded-2xl cursor-pointer transition-all duration-300 group focus-visible:outline-2 focus-visible:outline-primary",
       active 
         ? "bg-primary text-primary-foreground font-bold shadow-[0_4px_14px_rgba(198,255,77,0.2)]" 
         : "text-muted-foreground hover:bg-secondary hover:text-foreground font-medium"
@@ -189,13 +215,13 @@ export function SidebarItem({ icon, label, active, badge, notificationCount, onC
       {notificationCount && (
         <span className="bg-destructive text-destructive-foreground text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-sm">{notificationCount}</span>
       )}
-    </div>
+    </button>
   );
 }
 
 export function BottomNavItem({ icon, label, active, notification, onClick }: any) {
   return (
-    <div onClick={onClick} className="flex flex-col items-center justify-center w-16 relative cursor-pointer group gap-1.5">
+    <button type="button" aria-current={active ? 'page' : undefined} onClick={onClick} className="flex flex-col items-center justify-center w-16 shrink-0 relative cursor-pointer group gap-1.5 focus-visible:outline-2 focus-visible:outline-primary">
       <div className={cn(
         "flex items-center justify-center w-12 h-10 rounded-2xl transition-all duration-300",
         active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground group-hover:bg-secondary group-hover:text-foreground"
@@ -204,7 +230,7 @@ export function BottomNavItem({ icon, label, active, notification, onClick }: an
       </div>
       <span className={cn("text-[10px] transition-colors", active ? "text-foreground font-extrabold" : "text-muted-foreground font-semibold")}>{label}</span>
       {notification && <span className="absolute top-0 right-3 w-2.5 h-2.5 bg-destructive border-2 border-background rounded-full"></span>}
-    </div>
+    </button>
   );
 }
 
