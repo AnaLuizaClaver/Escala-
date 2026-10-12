@@ -4,8 +4,15 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
+    "dev:rebuild": "vite --config rebuild/web/vite.config.mjs --configLoader native",
+    "build:rebuild": "vite build --config rebuild/web/vite.config.mjs --configLoader native",
+    "typecheck:rebuild": "tsc -p rebuild/web/tsconfig.json",
+    "test:rebuild": "node --test rebuild/web/time.test.ts",
     "build": "vite build",
-    "dev": "vite"
+    "dev": "vite",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.node.json --noEmit --composite false --incremental false && npm run typecheck:rebuild",
+    "test": "node --test rebuild/web/time.test.ts tests/frontend.test.ts tests/navigation.test.ts",
+    "build:verify": "npm run build && npm run build:rebuild"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -39,7 +46,6 @@
     "@radix-ui/react-toggle": "1.1.2",
     "@radix-ui/react-toggle-group": "1.1.2",
     "@radix-ui/react-tooltip": "1.1.8",
-    "@supabase/supabase-js": "^2.112.4",
     "canvas-confetti": "1.9.4",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
@@ -68,6 +74,7 @@
   "devDependencies": {
     "@tailwindcss/vite": "4.1.12",
     "@types/node": "^26.4.0",
+    "@types/react": "19.2.18",
     "@types/react-dom": "^19.2.5",
     "@vitejs/plugin-react": "4.7.0",
     "tailwindcss": "4.1.12",
@@ -86,9 +93,7 @@
       "optional": true
     }
   },
-  "pnpm": {
-    "overrides": {
-      "vite": "6.3.5"
-    }
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

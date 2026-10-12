@@ -1,12 +1,11 @@
 import React, { useState } from 'react'
-import { useAuth } from '../hooks/useAuth'
-import { supabase } from '../lib/supabase'
+import { usePreview } from '../hooks/usePreview'
 import { toast } from 'sonner'
 import { Mail, Lock, Eye, EyeOff, LogIn, KeyRound, Sparkles, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 
 export default function LoginView({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
-  const { signIn } = useAuth()
+  const { enterApp } = usePreview()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -19,7 +18,7 @@ export default function LoginView({ onSwitchToRegister }: { onSwitchToRegister: 
   const [forgotLoading, setForgotLoading] = useState(false)
   const [forgotSuccess, setForgotSuccess] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
 
@@ -37,27 +36,12 @@ export default function LoginView({ onSwitchToRegister }: { onSwitchToRegister: 
     }
 
     setLoading(true)
-    const { error: authError } = await signIn(trimmedEmail, password)
+    enterApp()
     setLoading(false)
-
-    if (authError) {
-      const msg = (authError as any).message || 'Erro ao conectar'
-      let friendlyMsg = msg
-      if (msg.includes('Invalid login credentials')) {
-        friendlyMsg = 'E-mail ou senha incorretos. Verifique seus dados.'
-      } else if (msg.includes('Email not confirmed')) {
-        friendlyMsg = 'E-mail ainda não confirmado. Verifique sua caixa de entrada.'
-      } else if (msg.includes('rate limit')) {
-        friendlyMsg = 'Muitas tentativas. Aguarde alguns instantes antes de tentar novamente.'
-      }
-      setError(friendlyMsg)
-      toast.error(friendlyMsg)
-    } else {
-      toast.success('Login realizado com sucesso! Bem-vindo(a).')
-    }
+    toast.success('Demonstração aberta. Bem-vindo(a).')
   }
 
-  const handleForgotPassword = async (e: React.FormEvent) => {
+  const handleForgotPassword = (e: React.FormEvent) => {
     e.preventDefault()
     const targetEmail = (forgotEmail || email).trim()
 
@@ -67,17 +51,10 @@ export default function LoginView({ onSwitchToRegister }: { onSwitchToRegister: 
     }
 
     setForgotLoading(true)
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(targetEmail, {
-      redirectTo: `${window.location.origin}`,
-    })
     setForgotLoading(false)
 
-    if (resetError) {
-      toast.error(resetError.message || 'Não foi possível enviar o e-mail de recuperação.')
-    } else {
-      setForgotSuccess(true)
-      toast.success('Link de recuperação enviado para o seu e-mail!')
-    }
+    setForgotSuccess(true)
+    toast.info('Demonstração visual: nenhum e-mail foi enviado.')
   }
 
   return (
@@ -100,6 +77,7 @@ export default function LoginView({ onSwitchToRegister }: { onSwitchToRegister: 
 
       {/* Main Login Card */}
       <div className="bg-card border border-border rounded-3xl p-6 sm:p-8 shadow-sm relative overflow-hidden">
+        <button type="button" onClick={() => enterApp()} className="text-sm font-bold text-primary mb-4">Explorar sem autenticação</button>
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Email Field */}
           <div>
@@ -240,14 +218,14 @@ export default function LoginView({ onSwitchToRegister }: { onSwitchToRegister: 
               </div>
               <h2 className="text-2xl font-extrabold tracking-tight mb-2">Recuperar Senha</h2>
               <p className="text-sm text-muted-foreground font-semibold mb-6">
-                Informe o e-mail cadastrado e enviaremos um link seguro para você redefinir sua senha.
+                Interface de recuperação de senha. Nenhum e-mail será enviado.
               </p>
 
               {forgotSuccess ? (
                 <div className="space-y-4">
                   <div className="p-4 rounded-2xl bg-green-500/10 border border-green-500/20 text-green-700 dark:text-green-400 text-sm font-bold flex items-center gap-3">
                     <CheckCircle2 className="w-5 h-5 shrink-0" />
-                    <span>E-mail enviado! Verifique sua caixa de entrada e spam.</span>
+                    <span>Demonstração concluída. Nenhum e-mail foi enviado.</span>
                   </div>
                   <button
                     type="button"

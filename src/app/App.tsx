@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase'
-import { AuthProvider } from '../context/AuthContext'
-import { useAuth } from '../hooks/useAuth'
+﻿import React, { useState, useEffect } from 'react';
+import { previewData, getField } from '../mocks/previewData'
+import { PreviewProvider } from '../context/PreviewContext'
+import { usePreview } from '../hooks/usePreview'
 import LoginView from './LoginView'
 
 class ErrorBoundary extends React.Component<any, { hasError: boolean; error?: any }> {
@@ -12,11 +12,6 @@ class ErrorBoundary extends React.Component<any, { hasError: boolean; error?: an
 
   static getDerivedStateFromError(error: any) {
     return { hasError: true, error }
-  }
-
-  componentDidCatch(error: any, info: any) {
-    // You can log error to an external service here
-    // console.error('ErrorBoundary caught', error, info)
   }
 
   render() {
@@ -34,9 +29,9 @@ class ErrorBoundary extends React.Component<any, { hasError: boolean; error?: an
 
 export default function App() {
   return (
-    <AuthProvider>
+    <PreviewProvider>
       <AppInner />
-    </AuthProvider>
+    </PreviewProvider>
   )
 }
 import { 
@@ -48,7 +43,7 @@ import {
   LayoutDashboard, ListChecks, PieChart, ShieldCheck, AlertTriangle,
   Plus, Trash2, Edit2, LayoutTemplate, Copy, Eye, EyeOff, PlusCircle, Repeat,
   ChevronUp, ChevronDown, ListMusic, TrendingUp, XCircle, Activity,
-  Mail, Lock, Phone, RefreshCw, Sparkles
+  Mail, Lock, Phone, RefreshCw, Sparkles, Layers, Video
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, 
@@ -64,181 +59,7 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// --- MOCK DATA ---
-const mockEscalas = [
-  {
-    id: 1,
-    isRecurring: true,
-    recurrenceRule: 'Toda quinta-feira',
-    date: '17 AGO',
-    fullDate: '17 de Agosto de 2024',
-    time: '20:00',
-    event: 'Culto de Celebração',
-    ministry: 'Louvor',
-    userRole: 'Teclado',
-    userStatus: 'Confirmada',
-    scaleStatus: 'Completa',
-    team: [
-      { name: 'Ana Oliveira', role: 'Teclado', status: 'Confirmado', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&auto=format' },
-      { name: 'João Silva', role: 'Vocal', status: 'Confirmado', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&auto=format' },
-      { name: 'Maria Souza', role: 'Bateria', status: 'Confirmado', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&auto=format' },
-    ],
-    repertoire: [
-      { title: 'Deus é Fiel', artist: 'Diante do Trono', tone: 'G' },
-      { title: 'Vem me Buscar', artist: 'Jefferson & Suellen', tone: 'Am' },
-      { title: 'Ruja o Leão', artist: 'Talita Catanzaro', tone: 'C' },
-    ]
-  },
-  {
-    id: 2,
-    date: '24 AGO',
-    fullDate: '24 de Agosto de 2024',
-    time: '09:00',
-    event: 'Escola Bíblica Dominical',
-    ministry: 'Recepção',
-    userRole: 'Porta Principal',
-    userStatus: 'Pendente',
-    scaleStatus: 'Incompleta',
-    team: [
-      { name: 'Ana Oliveira', role: 'Porta Principal', status: 'Pendente', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&auto=format' },
-      { name: 'Carlos Dias', role: 'Estacionamento', status: 'Confirmado', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&auto=format' },
-      { name: 'Vaga Aberta', role: 'Corredor', status: 'Vazio', avatar: null },
-    ],
-    repertoire: []
-  },
-  {
-    id: 3,
-    date: '31 AGO',
-    fullDate: '31 de Agosto de 2024',
-    time: '19:30',
-    event: 'Culto de Jovens',
-    ministry: 'Comunicação',
-    userRole: 'Fotografia',
-    userStatus: 'Confirmada',
-    scaleStatus: 'Crítica',
-    team: [
-      { name: 'Ana Oliveira', role: 'Fotografia', status: 'Confirmado', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&auto=format' },
-      { name: 'Vaga Aberta', role: 'Transmissão', status: 'Vazio', avatar: null },
-      { name: 'Vaga Aberta', role: 'Projeção', status: 'Vazio', avatar: null },
-    ],
-    repertoire: []
-  }
-];
 
-const mockPlaylists = [
-  {
-    id: 1,
-    name: 'Domingo 17/08',
-    date: '17/08/2024',
-    event: 'Culto de Celebração',
-    songs: [
-      { id: 101, title: 'Deus é Fiel', artist: 'Diante do Trono', tone: 'G', bpm: 72, lead: 'Ana Oliveira', notes: 'Fazer introdução apenas no teclado, entrar bateria no refrão.' },
-      { id: 102, title: 'Vem me Buscar', artist: 'Jefferson & Suellen', tone: 'Am', bpm: 120, lead: 'João Silva', notes: 'Repetir a ponte 3 vezes.' },
-      { id: 103, title: 'Ruja o Leão', artist: 'Talita Catanzaro', tone: 'C', bpm: 68, lead: 'Maria Souza', notes: 'Arranjo original.' },
-    ]
-  },
-  {
-    id: 2,
-    name: 'Culto de Jovens',
-    date: '31/08/2024',
-    event: 'Rede de Jovens',
-    songs: [
-      { id: 201, title: 'Fogo em Meus Ossos', artist: 'Cem Ovelhas', tone: 'Em', bpm: 135, lead: 'João Silva', notes: 'Muito peso na bateria.' },
-      { id: 202, title: 'Lindo És', artist: 'Livres', tone: 'D', bpm: 65, lead: 'Ana Oliveira', notes: 'Acústico.' },
-    ]
-  },
-  {
-    id: 3,
-    name: 'Conferência',
-    date: '15/09/2024',
-    event: 'Conferência Anual',
-    songs: [
-      { id: 301, title: 'A Benção', artist: 'Gabriel Guedes', tone: 'A', bpm: 70, lead: 'Coral', notes: 'Todos cantam.' }
-    ]
-  },
-  {
-    id: 4,
-    name: 'Ensaio',
-    date: 'Quinta-feira',
-    event: 'Ensaio Geral',
-    songs: []
-  }
-];
-
-const mockVoluntarios = [
-  { id: 1, name: 'Ana Oliveira', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&auto=format', email: 'ana@email.com', phone: '(11) 98888-7777', ministries: [{ name: 'Louvor', roles: ['Teclado', 'Vocal'] }], isAdmin: false, status: 'Ativo', stats: { presencas: 45, escalas: 45, conquistas: 5 } },
-  { id: 2, name: 'Marcos Silva', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&auto=format', email: 'marcos@email.com', phone: '(11) 97777-6666', ministries: [{ name: 'Louvor', roles: ['Líder', 'Bateria'] }], isAdmin: true, status: 'Ativo', stats: { presencas: 120, escalas: 122, conquistas: 12 } },
-  { id: 3, name: 'Mariana Costa', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&auto=format', email: 'mariana@email.com', phone: '(11) 96666-5555', ministries: [{ name: 'Recepção', roles: ['Porta'] }, { name: 'Comunicação', roles: ['Fotografia'] }], isAdmin: false, status: 'Inativo', stats: { presencas: 10, escalas: 15, conquistas: 2 } },
-  { id: 4, name: 'João Silva', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&auto=format', email: 'joao@email.com', phone: '(11) 95555-4444', ministries: [{ name: 'Mídia', roles: ['Projeção', 'Câmera'] }], isAdmin: false, status: 'Ativo', stats: { presencas: 80, escalas: 85, conquistas: 8 } }
-];
-
-const mockSolicitacoes = [
-  { id: 1, type: 'ENTRADA EM MINISTÉRIO', person: { name: 'Lucas Pereira', avatar: null }, ministry: 'Mídia', scale: null, date: 'Hoje', justification: 'Fiz o curso de transmissão no mês passado e gostaria de ajudar na equipe.', status: 'Pendente' },
-  { id: 2, type: 'TROCA DE ESCALA', person: { name: 'Maria Souza', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&auto=format' }, ministry: 'Louvor', scale: { event: 'Culto de Celebração', date: 'Domingo, 19:00' }, date: 'Ontem', justification: 'Estarei viajando a trabalho neste fim de semana.', status: 'Pendente' },
-  { id: 3, type: 'QUERO SERVIR', person: { name: 'Ana Oliveira', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&auto=format' }, ministry: 'Mídia', scale: { event: 'Escala Aberta - Culto', date: 'Domingo, 19:00' }, date: '2 dias atrás', justification: '', status: 'Aprovada' },
-];
-
-const mockFeedPosts = [
-  {
-    id: 1,
-    type: 'aviso',
-    ministry: 'Louvor',
-    authorName: 'Marcos (Líder)',
-    authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&auto=format',
-    time: '2 horas atrás',
-    content: 'Pessoal, o ensaio geral desta quinta-feira foi transferido para as 20:30h devido a uma manutenção no templo. Por favor, confirmem ciência!',
-    reactions: { heart: 4, fire: 0, pray: 12, music: 0 }
-  },
-  {
-    id: 2,
-    type: 'escala',
-    ministry: 'Mídia',
-    authorName: 'Sistema Escalaê',
-    authorAvatar: null,
-    time: '5 horas atrás',
-    content: '🔥 ESCALA ABERTA\nDomingo • 19:00\nFalta: 📹 1 Câmera',
-    reactions: { heart: 0, fire: 3, pray: 0, music: 0 }
-  },
-  {
-    id: 3,
-    type: 'aniversario',
-    ministry: 'Geral',
-    authorName: 'Secretaria',
-    authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&auto=format',
-    time: 'Ontem',
-    content: '🎉 Hoje é aniversário da Mariana Costa! Deixe sua mensagem de carinho e gratidão pela vida dela.',
-    reactions: { heart: 24, fire: 5, pray: 8, music: 0 }
-  },
-  {
-    id: 4,
-    type: 'voluntario',
-    ministry: 'Recepção',
-    authorName: 'Pr. Paulo',
-    authorAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&auto=format',
-    time: 'Ontem',
-    content: '🏆 Voluntário do Mês: Lucas Silva! Obrigado por servir com tanta excelência e amor no último mês.',
-    reactions: { heart: 18, fire: 22, pray: 5, music: 0 }
-  },
-  {
-    id: 5,
-    type: 'evento',
-    ministry: 'Geral',
-    authorName: 'Liderança',
-    authorAvatar: null,
-    time: '2 dias atrás',
-    content: '📅 Conferência de Inverno: As inscrições já estão abertas para todos os voluntários com 50% de desconto. Procurem seus líderes.',
-    reactions: { heart: 45, fire: 12, pray: 0, music: 0 }
-  }
-];
-
-const mockNotifications = [
-  { id: 1, type: 'escala_aberta', title: 'Escala Aberta na Mídia', description: 'Domingo às 19:00 precisa de 1 Câmera.', time: '10 min atrás', read: false },
-  { id: 2, type: 'troca_aprovada', title: 'Troca Aprovada 🙌', description: 'João Silva assumirá seu lugar no Culto de Jovens.', time: '2 horas atrás', read: false },
-  { id: 3, type: 'aviso', title: 'Novo aviso no Louvor', description: 'Marcos publicou: "Pessoal, o ensaio geral desta quinta..."', time: '3 horas atrás', read: false },
-  { id: 4, type: 'nova_escala', title: 'Você foi escalada', description: 'Para Culto de Celebração - Louvor (Teclado).', time: 'Ontem', read: true },
-  { id: 5, type: 'pedido_troca', title: 'Pedido de troca', description: 'Maria solicitou troca para a escala de Domingo de Manhã.', time: 'Ontem', read: true },
-  { id: 6, type: 'aniversario', title: 'Aniversário hoje', description: 'Mariana Costa está de aniversário!', time: '2 dias atrás', read: true },
-];
 
 // --- SYSTEM COMPONENTS ---
 
@@ -350,9 +171,6 @@ function AppInner() {
   const [currentView, setCurrentView] = useState('home');
   const [selectedEscala, setSelectedEscala] = useState<any>(null);
 
-  // Auth/Onboarding Flow States
-  const [authStep, setAuthStep] = useState('register'); // 'register', 'select_ministry', 'pending_approval', 'app'
-  const [pendingMinistries, setPendingMinistries] = useState<string[]>([]);
   const [isAdminMode, setIsAdminMode] = useState(false);
 
   // Modals state
@@ -385,9 +203,9 @@ function AppInner() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const unreadNotificationsCount = mockNotifications.filter(n => !n.read).length;
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
 
-  const { session, user, loading, signOut } = useAuth()
+  const { showApp, user, showLogin } = usePreview()
 
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'select_ministry' | 'pending_approval'>('login')
   const [pendingApprovalMinistries, setPendingApprovalMinistries] = useState<string[]>([])
@@ -400,6 +218,7 @@ function AppInner() {
       setUserProfile(null)
       setUserMemberships([])
       setSelectedMinistry(null)
+      setUnreadNotificationsCount(0)
       return
     }
 
@@ -407,40 +226,28 @@ function AppInner() {
 
     async function loadUserData() {
       try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user!.id)
-          .single()
+        const { data: profile } = previewData('profiles', 'read', undefined, (row: any) => getField(row, 'id') === user!.id, { single: true, limit: undefined, order: undefined })
 
         if (isMounted && profile) {
           setUserProfile(profile)
         }
 
-        const { data: memberships } = await supabase
-          .from('ministry_members')
-          .select(`
-            id,
-            role,
-            status,
-            ministry_id,
-            created_at,
-            ministries (
-              id,
-              name,
-              description,
-              icon,
-              color,
-              auto_schedule_enabled
-            )
-          `)
-          .eq('user_id', user!.id)
+        const { data: memberships } = previewData('ministry_members', 'read', undefined, (row: any) => getField(row, 'user_id') === user!.id, { single: false, limit: undefined, order: undefined })
 
         if (isMounted && memberships) {
           setUserMemberships(memberships)
           const approved = memberships.filter((m: any) => m.status === 'approved')
           if (approved.length > 0) {
             setSelectedMinistry(approved[0].ministries)
+
+            // Contar notificações não lidas / confirmações pendentes
+            const approvedMemberIds = approved.map((m: any) => m.id);
+            const todayStr = new Date().toISOString().split('T')[0];
+            const { count } = previewData('schedule_members', 'read', undefined, (row: any) => (approvedMemberIds).includes(getField(row, 'ministry_member_id')) && getField(row, 'response') === 'pending' && getField(row, 'schedules.status') === 'published' && getField(row, 'schedules.date') >= todayStr, { single: false, limit: undefined, order: undefined });
+
+            if (isMounted && typeof count === 'number') {
+              setUnreadNotificationsCount(count);
+            }
           }
         }
       } catch (err) {
@@ -458,37 +265,24 @@ function AppInner() {
   const refreshUserData = async () => {
     if (!user?.id) return
     try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
+      const { data: profile } = previewData('profiles', 'read', undefined, (row: any) => getField(row, 'id') === user.id, { single: true, limit: undefined, order: undefined })
       if (profile) setUserProfile(profile)
 
-      const { data: memberships } = await supabase
-        .from('ministry_members')
-        .select(`
-          id,
-          role,
-          status,
-          ministry_id,
-          created_at,
-          ministries (
-            id,
-            name,
-            description,
-            icon,
-            color,
-            auto_schedule_enabled
-          )
-        `)
-        .eq('user_id', user.id)
+      const { data: memberships } = previewData('ministry_members', 'read', undefined, (row: any) => getField(row, 'user_id') === user.id, { single: false, limit: undefined, order: undefined })
 
       if (memberships) {
         setUserMemberships(memberships)
         const approved = memberships.filter((m: any) => m.status === 'approved')
         if (approved.length > 0) {
           setSelectedMinistry(approved[0].ministries)
+
+          const approvedMemberIds = approved.map((m: any) => m.id);
+          const todayStr = new Date().toISOString().split('T')[0];
+          const { count } = previewData('schedule_members', 'read', undefined, (row: any) => (approvedMemberIds).includes(getField(row, 'ministry_member_id')) && getField(row, 'response') === 'pending' && getField(row, 'schedules.status') === 'published' && getField(row, 'schedules.date') >= todayStr, { single: false, limit: undefined, order: undefined });
+
+          if (typeof count === 'number') {
+            setUnreadNotificationsCount(count);
+          }
         }
       }
     } catch (err) {
@@ -496,20 +290,7 @@ function AppInner() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen w-full bg-background">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center font-extrabold text-2xl animate-bounce">
-            E
-          </div>
-          <p className="text-sm font-bold text-muted-foreground animate-pulse">Carregando Escalaê...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!session) {
+  if (!showApp) {
     return (
       <div className="flex min-h-screen w-full bg-background text-foreground font-sans overflow-hidden transition-colors duration-300">
         <div className="hidden lg:flex w-[45%] bg-primary flex-col justify-between p-12 relative overflow-hidden text-primary-foreground border-r border-border">
@@ -547,7 +328,7 @@ function AppInner() {
             ) : authMode === 'pending_approval' ? (
               <PendingApprovalView
                 ministries={pendingApprovalMinistries}
-                onSignOut={signOut}
+                onSignOut={showLogin}
               />
             ) : (
               <LoginView onSwitchToRegister={() => setAuthMode('register')} />
@@ -571,7 +352,7 @@ function AppInner() {
               <div className="w-8 h-8 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-extrabold text-sm rotate-3">E</div>
               <span className="font-extrabold text-lg tracking-tight">Escalaê</span>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => signOut()} className="text-muted-foreground hover:text-foreground font-bold">
+            <Button variant="ghost" size="sm" onClick={() => showLogin()} className="text-muted-foreground hover:text-foreground font-bold">
               <LogOut className="w-4 h-4 mr-2" /> Sair
             </Button>
           </div>
@@ -597,7 +378,7 @@ function AppInner() {
               <div className="w-8 h-8 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-extrabold text-sm rotate-3">E</div>
               <span className="font-extrabold text-lg tracking-tight">Escalaê</span>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => signOut()} className="text-muted-foreground hover:text-foreground font-bold">
+            <Button variant="ghost" size="sm" onClick={() => showLogin()} className="text-muted-foreground hover:text-foreground font-bold">
               <LogOut className="w-4 h-4 mr-2" /> Sair
             </Button>
           </div>
@@ -607,23 +388,7 @@ function AppInner() {
               userMemberships={userMemberships}
               onRefreshMemberships={async () => {
                 if (!user?.id) return
-                const { data } = await supabase
-                  .from('ministry_members')
-                  .select(`
-                    id,
-                    role,
-                    status,
-                    ministry_id,
-                    ministries (
-                      id,
-                      name,
-                      description,
-                      icon,
-                      color,
-                      auto_schedule_enabled
-                    )
-                  `)
-                  .eq('user_id', user.id)
+                const { data } = previewData('ministry_members', 'read', undefined, (row: any) => getField(row, 'user_id') === user.id, { single: false, limit: undefined, order: undefined })
 
                 if (data) {
                   setUserMemberships(data)
@@ -636,7 +401,7 @@ function AppInner() {
                   }
                 }
               }}
-              onSignOut={signOut}
+              onSignOut={showLogin}
             />
           </div>
         </div>
@@ -803,7 +568,7 @@ function AppInner() {
               userProfile={userProfile} 
               userMemberships={userMemberships} 
               onRefreshProfile={refreshUserData} 
-              onSignOut={signOut} 
+              onSignOut={showLogin} 
               toggleTheme={toggleTheme} 
               isDarkMode={isDarkMode} 
             />
@@ -832,8 +597,8 @@ function AppInner() {
           {currentView === 'admin_voluntario_perfil' && <AdminVoluntarioPerfilView voluntario={selectedEscala} navigateTo={navigateTo} />}
           {currentView === 'admin_solicitacoes' && <AdminSolicitacoesView navigateTo={navigateTo} />}
           {currentView === 'admin_repertorio' && <AdminRepertorioView />}
-          {currentView === 'admin_feed' && <AdminFeedView />}
-          {currentView === 'admin_relatorios' && <AdminRelatoriosView />}
+          {currentView === 'admin_feed' && <AdminFeedView user={user} userProfile={userProfile} navigateTo={navigateTo} />}
+          {currentView === 'admin_relatorios' && <AdminRelatoriosView navigateTo={navigateTo} />}
           {currentView === 'configuracoes' && (
             <ConfiguracoesView 
               toggleTheme={toggleTheme} 
@@ -841,7 +606,8 @@ function AppInner() {
               navigateTo={navigateTo} 
               user={user}
               userProfile={userProfile}
-              signOut={signOut}
+              onRefreshProfile={refreshUserData}
+              showLogin={showLogin}
             />
           )}
         </div>
@@ -941,41 +707,7 @@ function HomeView({ toggleTheme, isDarkMode, navigateTo, onTrocaClick, unreadCou
 
       // 1. Próxima escala do voluntário
       if (userMemberIds.length > 0) {
-        const { data: myMemberRows } = await supabase
-          .from('schedule_members')
-          .select(`
-            id,
-            response,
-            response_at,
-            role_id,
-            ministry_roles ( id, name ),
-            schedules!inner (
-              id,
-              title,
-              description,
-              date,
-              start_time,
-              end_time,
-              location,
-              status,
-              ministries ( id, name, icon, color ),
-              schedule_members (
-                id,
-                response,
-                role_id,
-                ministry_roles ( name ),
-                ministry_members (
-                  id,
-                  profiles ( full_name, avatar_url )
-                )
-              )
-            )
-          `)
-          .in('ministry_member_id', userMemberIds)
-          .gte('schedules.date', todayStr)
-          .eq('schedules.status', 'published')
-          .order('schedules(date)', { ascending: true })
-          .limit(1)
+        const { data: myMemberRows } = previewData('schedule_members', 'read', undefined, (row: any) => (userMemberIds).includes(getField(row, 'ministry_member_id')) && getField(row, 'schedules.date') >= todayStr && getField(row, 'schedules.status') === 'published', { single: false, limit: 1, order: ['schedules(date)', { ascending: true }] })
 
         if (myMemberRows && myMemberRows.length > 0) {
           setProximaEscala(myMemberRows[0])
@@ -985,56 +717,18 @@ function HomeView({ toggleTheme, isDarkMode, navigateTo, onTrocaClick, unreadCou
       }
 
       // 2. Vagas abertas (Quero Servir)
-      const { data: slots } = await supabase
-        .from('schedule_members')
-        .select(`
-          id,
-          role_id,
-          schedule_id,
-          ministry_roles ( id, name, ministry_id ),
-          schedules!inner (
-            id,
-            title,
-            date,
-            start_time,
-            location,
-            status,
-            ministries ( id, name, icon, color )
-          )
-        `)
-        .is('ministry_member_id', null)
-        .eq('schedules.status', 'published')
-        .gte('schedules.date', todayStr)
-        .order('schedules(date)', { ascending: true })
-        .limit(4)
+      const { data: slots } = previewData('schedule_members', 'read', undefined, (row: any) => getField(row, 'ministry_member_id') === null && getField(row, 'schedules.status') === 'published' && getField(row, 'schedules.date') >= todayStr, { single: false, limit: 4, order: ['schedules(date)', { ascending: true }] })
 
       setOpenSlots(slots || [])
 
       // 3. Voluntário do mês
       const now = new Date()
-      const { data: volMonth } = await supabase
-        .from('volunteer_of_month')
-        .select(`
-          id,
-          reason,
-          month,
-          year,
-          profiles ( full_name, avatar_url ),
-          ministries ( name )
-        `)
-        .eq('month', now.getMonth() + 1)
-        .eq('year', now.getFullYear())
-        .limit(1)
-        .maybeSingle()
+      const { data: volMonth } = previewData('volunteer_of_month', 'read', undefined, (row: any) => getField(row, 'month') === now.getMonth() + 1 && getField(row, 'year') === now.getFullYear(), { single: true, limit: 1, order: undefined })
 
       setVoluntarioMes(volMonth)
 
       // 4. Aniversariantes
-      const { data: bdays } = await supabase
-        .from('profiles')
-        .select('id, full_name, birth_date, avatar_url')
-        .not('birth_date', 'is', null)
-        .limit(6)
+      const { data: bdays } = previewData('profiles', 'read', undefined, (row: any) => getField(row, 'birth_date') !== null, { single: false, limit: 6, order: undefined })
 
       setAniversarios(bdays || [])
     } catch (err) {
@@ -1049,13 +743,10 @@ function HomeView({ toggleTheme, isDarkMode, navigateTo, onTrocaClick, unreadCou
   }, [userMemberships])
 
   const handleConfirmarPresenca = async (scheduleMemberId: string) => {
-    const { error } = await supabase
-      .from('schedule_members')
-      .update({
+    const { error } = previewData('schedule_members', 'update', {
         response: 'confirmed',
         response_at: new Date().toISOString()
-      })
-      .eq('id', scheduleMemberId)
+      }, (row: any) => getField(row, 'id') === scheduleMemberId, { single: false, limit: undefined, order: undefined })
 
     if (error) {
       toast.error('Erro ao confirmar presença.')
@@ -1072,20 +763,17 @@ function HomeView({ toggleTheme, isDarkMode, navigateTo, onTrocaClick, unreadCou
       return
     }
 
-    const { error } = await supabase
-      .from('schedule_members')
-      .update({
+    const { error } = previewData('schedule_members', 'update', {
         ministry_member_id: matchingMember.id,
         response: 'confirmed',
         response_at: new Date().toISOString()
-      })
-      .eq('id', slotId)
+      }, (row: any) => getField(row, 'id') === slotId, { single: false, limit: undefined, order: undefined })
 
     if (error) {
       toast.error('Não foi possível assumir a vaga. Tente novamente.')
     } else {
       toast.success('Você assumiu a vaga com sucesso!')
-      setOpenSlots(prev => prev.filter(s => s.id !== slotId))
+      setOpenSlots(prev => prev.filter((s: any) => s.id !== slotId))
       void loadHomeData()
     }
   }
@@ -1192,65 +880,7 @@ function EscalasView({ navigateTo, user, userMemberships }: any) {
           return;
         }
 
-        const { data: memberRows, error } = await supabase
-          .from('schedule_members')
-          .select(`
-            id,
-            response,
-            response_at,
-            role_id,
-            ministry_roles (
-              id,
-              name
-            ),
-            schedules!inner (
-              id,
-              title,
-              description,
-              date,
-              start_time,
-              end_time,
-              location,
-              status,
-              ministries (
-                id,
-                name,
-                icon,
-                color
-              ),
-              schedule_members (
-                id,
-                response,
-                ministry_member_id,
-                ministry_roles ( name ),
-                ministry_members (
-                  id,
-                  profiles (
-                    id,
-                    full_name,
-                    avatar_url
-                  )
-                )
-              ),
-              schedule_songs (
-                id,
-                position,
-                songs (
-                  id,
-                  title,
-                  artist,
-                  musical_key,
-                  bpm,
-                  cifra_url,
-                  youtube_url,
-                  notes
-                )
-              )
-            )
-          `)
-          .in('ministry_member_id', userMemberIds)
-          .eq('schedules.status', 'published')
-          .order('schedules(date)', { ascending: false });
+        const { data: memberRows, error } = previewData('schedule_members', 'read', undefined, (row: any) => (userMemberIds).includes(getField(row, 'ministry_member_id')) && getField(row, 'schedules.status') === 'published', { single: false, limit: undefined, order: ['schedules(date)', { ascending: false }] });
 
         if (error) {
           toast.error('Erro ao carregar suas escalas.');
@@ -1258,55 +888,7 @@ function EscalasView({ navigateTo, user, userMemberships }: any) {
           setEscalas(memberRows || []);
         }
       } else {
-        const { data: allSchedules, error } = await supabase
-          .from('schedules')
-          .select(`
-            id,
-            title,
-            description,
-            date,
-            start_time,
-            end_time,
-            location,
-            status,
-            ministries (
-              id,
-              name,
-              icon,
-              color
-            ),
-            schedule_members (
-              id,
-              response,
-              ministry_member_id,
-              ministry_roles ( name ),
-              ministry_members (
-                id,
-                user_id,
-                profiles (
-                  id,
-                  full_name,
-                  avatar_url
-                )
-              )
-            ),
-            schedule_songs (
-              id,
-              position,
-              songs (
-                id,
-                title,
-                artist,
-                musical_key,
-                bpm,
-                cifra_url,
-                youtube_url,
-                notes
-              )
-            )
-          `)
-          .eq('status', 'published')
-          .order('date', { ascending: false });
+        const { data: allSchedules, error } = previewData('schedules', 'read', undefined, (row: any) => getField(row, 'status') === 'published', { single: false, limit: undefined, order: ['date', { ascending: false }] });
 
         if (error) {
           toast.error('Erro ao carregar escalas da igreja.');
@@ -1531,13 +1113,10 @@ function DetalhesView({ escala, onBack, onOpenTroca, onOpenSong, user, userMembe
 
   const handleConfirmPresence = async () => {
     if (!mySlot?.id) return;
-    const { error } = await supabase
-      .from('schedule_members')
-      .update({
+    const { error } = previewData('schedule_members', 'update', {
         response: 'confirmed',
         response_at: new Date().toISOString()
-      })
-      .eq('id', mySlot.id);
+      }, (row: any) => getField(row, 'id') === mySlot.id, { single: false, limit: undefined, order: undefined });
 
     if (error) {
       toast.error('Erro ao confirmar presença.');
@@ -1562,36 +1141,17 @@ function DetalhesView({ escala, onBack, onOpenTroca, onOpenSong, user, userMembe
       return;
     }
 
-    const { error } = await supabase
-      .from('schedule_members')
-      .update({
+    const { error } = previewData('schedule_members', 'update', {
         ministry_member_id: matchingMember.id,
         response: 'confirmed',
         response_at: new Date().toISOString()
-      })
-      .eq('id', slotId);
+      }, (row: any) => getField(row, 'id') === slotId, { single: false, limit: undefined, order: undefined });
 
     if (error) {
       toast.error('Erro ao assumir vaga: ' + error.message);
     } else {
       toast.success('Você assumiu a vaga com sucesso!');
-      const { data: updatedMembers } = await supabase
-        .from('schedule_members')
-        .select(`
-          id,
-          response,
-          ministry_member_id,
-          ministry_roles ( name ),
-          ministry_members (
-            id,
-            profiles (
-              id,
-              full_name,
-              avatar_url
-            )
-          )
-        `)
-        .eq('schedule_id', currentEscala.id);
+      const { data: updatedMembers } = previewData('schedule_members', 'read', undefined, (row: any) => getField(row, 'schedule_id') === currentEscala.id, { single: false, limit: undefined, order: undefined });
 
       if (updatedMembers) {
         setCurrentEscala((prev: any) => ({ ...prev, schedule_members: updatedMembers }));
@@ -1806,43 +1366,12 @@ function RepertorioView({ onOpenSong }: any) {
     setLoading(true);
     try {
       // 1. Buscar todas as músicas cadastradas
-      const { data: songsData } = await supabase
-        .from('songs')
-        .select('*')
-        .order('title', { ascending: true });
+      const { data: songsData } = previewData('songs', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['title', { ascending: true }] });
 
       setAllSongs(songsData || []);
 
       // 2. Buscar escalas publicadas com repertório
-      const { data: schedulesData } = await supabase
-        .from('schedules')
-        .select(`
-          id,
-          title,
-          date,
-          start_time,
-          location,
-          ministries (
-            id,
-            name
-          ),
-          schedule_songs (
-            id,
-            position,
-            songs (
-              id,
-              title,
-              artist,
-              musical_key,
-              bpm,
-              cifra_url,
-              youtube_url,
-              notes
-            )
-          )
-        `)
-        .eq('status', 'published')
-        .order('date', { ascending: false });
+      const { data: schedulesData } = previewData('schedules', 'read', undefined, (row: any) => getField(row, 'status') === 'published', { single: false, limit: undefined, order: ['date', { ascending: false }] });
 
       const formattedPlaylists = (schedulesData || [])
         .filter((s: any) => s.schedule_songs && s.schedule_songs.length > 0)
@@ -2143,10 +1672,7 @@ function FeedView({ user, userMemberships }: any) {
     setLoading(true);
     try {
       // 1. Carregar lista de ministérios
-      const { data: minData } = await supabase
-        .from('ministries')
-        .select('id, name, color, icon')
-        .order('name');
+      const { data: minData } = previewData('ministries', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['name', {}] });
 
       setMinistriesList(minData || []);
 
@@ -2154,28 +1680,7 @@ function FeedView({ user, userMemberships }: any) {
       const todayStr = new Date().toISOString().split('T')[0];
 
       // 2. Vagas abertas em escalas futuras
-      const { data: openSlots } = await supabase
-        .from('schedule_members')
-        .select(`
-          id,
-          role_id,
-          schedule_id,
-          ministry_roles ( id, name, ministry_id ),
-          schedules!inner (
-            id,
-            title,
-            date,
-            start_time,
-            location,
-            status,
-            ministries ( id, name, icon, color )
-          )
-        `)
-        .is('ministry_member_id', null)
-        .eq('schedules.status', 'published')
-        .gte('schedules.date', todayStr)
-        .order('schedules(date)', { ascending: true })
-        .limit(6);
+      const { data: openSlots } = previewData('schedule_members', 'read', undefined, (row: any) => getField(row, 'ministry_member_id') === null && getField(row, 'schedules.status') === 'published' && getField(row, 'schedules.date') >= todayStr, { single: false, limit: 6, order: ['schedules(date)', { ascending: true }] });
 
       (openSlots || []).forEach((slot: any) => {
         const s = slot.schedules;
@@ -2196,20 +1701,7 @@ function FeedView({ user, userMemberships }: any) {
 
       // 3. Voluntário do mês
       const now = new Date();
-      const { data: volMonth } = await supabase
-        .from('volunteer_of_month')
-        .select(`
-          id,
-          reason,
-          month,
-          year,
-          profiles ( full_name, avatar_url ),
-          ministries ( name )
-        `)
-        .eq('month', now.getMonth() + 1)
-        .eq('year', now.getFullYear())
-        .limit(1)
-        .maybeSingle();
+      const { data: volMonth } = previewData('volunteer_of_month', 'read', undefined, (row: any) => getField(row, 'month') === now.getMonth() + 1 && getField(row, 'year') === now.getFullYear(), { single: true, limit: 1, order: undefined });
 
       if (volMonth && volMonth.profiles) {
         dynamicPosts.push({
@@ -2225,14 +1717,10 @@ function FeedView({ user, userMemberships }: any) {
       }
 
       // 4. Aniversariantes do mês
-      const { data: birthdays } = await supabase
-        .from('profiles')
-        .select('id, full_name, birth_date, avatar_url')
-        .not('birth_date', 'is', null)
-        .limit(4);
+      const { data: birthdays } = previewData('profiles', 'read', undefined, (row: any) => getField(row, 'birth_date') !== null, { single: false, limit: 4, order: undefined });
 
       if (birthdays && birthdays.length > 0) {
-        const bdayNames = birthdays.map(b => `${b.full_name} (${formatDatePtBR(b.birth_date)})`).join(', ');
+        const bdayNames = birthdays.map((b: any) => `${b.full_name} (${formatDatePtBR(b.birth_date)})`).join(', ');
         dynamicPosts.push({
           id: 'birthdays-post',
           type: 'aniversario',
@@ -2276,14 +1764,11 @@ function FeedView({ user, userMemberships }: any) {
       return;
     }
 
-    const { error } = await supabase
-      .from('schedule_members')
-      .update({
+    const { error } = previewData('schedule_members', 'update', {
         ministry_member_id: matchingMember.id,
         response: 'confirmed',
         response_at: new Date().toISOString()
-      })
-      .eq('id', slotId);
+      }, (row: any) => getField(row, 'id') === slotId, { single: false, limit: undefined, order: undefined });
 
     if (error) {
       toast.error('Erro ao assumir vaga: ' + error.message);
@@ -2445,24 +1930,7 @@ function NotificacoesView({ navigateTo, user, userMemberships = [] }: any) {
     try {
       // 1. Escalas com confirmação pendente
       if (approvedIds.length > 0) {
-        const { data: pendingSlots } = await supabase
-          .from('schedule_members')
-          .select(`
-            id,
-            response,
-            schedules!inner (
-              id,
-              title,
-              date,
-              start_time,
-              status,
-              ministries ( name )
-            )
-          `)
-          .in('ministry_member_id', approvedIds)
-          .eq('response', 'pending')
-          .eq('schedules.status', 'published')
-          .gte('schedules.date', todayStr);
+        const { data: pendingSlots } = previewData('schedule_members', 'read', undefined, (row: any) => (approvedIds).includes(getField(row, 'ministry_member_id')) && getField(row, 'response') === 'pending' && getField(row, 'schedules.status') === 'published' && getField(row, 'schedules.date') >= todayStr, { single: false, limit: undefined, order: undefined });
 
         (pendingSlots || []).forEach((slot: any) => {
           const s = slot.schedules;
@@ -2480,23 +1948,7 @@ function NotificacoesView({ navigateTo, user, userMemberships = [] }: any) {
 
       // 2. Pedidos de troca do usuário
       if (approvedIds.length > 0) {
-        const { data: swaps } = await supabase
-          .from('schedule_swap_requests')
-          .select(`
-            id,
-            status,
-            reason,
-            created_at,
-            schedule_members (
-              schedules (
-                title,
-                date
-              )
-            )
-          `)
-          .in('requester_id', approvedIds)
-          .order('created_at', { ascending: false })
-          .limit(3);
+        const { data: swaps } = previewData('schedule_swap_requests', 'read', undefined, (row: any) => (approvedIds).includes(getField(row, 'requester_id')), { single: false, limit: 3, order: ['created_at', { ascending: false }] });
 
         (swaps || []).forEach((swap: any) => {
           const sc = swap.schedule_members?.schedules;
@@ -2515,22 +1967,7 @@ function NotificacoesView({ navigateTo, user, userMemberships = [] }: any) {
       }
 
       // 3. Vagas abertas urgentes
-      const { data: openSlots } = await supabase
-        .from('schedule_members')
-        .select(`
-          id,
-          schedules!inner (
-            id,
-            title,
-            date,
-            status,
-            ministries ( name )
-          )
-        `)
-        .is('ministry_member_id', null)
-        .eq('schedules.status', 'published')
-        .gte('schedules.date', todayStr)
-        .limit(2);
+      const { data: openSlots } = previewData('schedule_members', 'read', undefined, (row: any) => getField(row, 'ministry_member_id') === null && getField(row, 'schedules.status') === 'published' && getField(row, 'schedules.date') >= todayStr, { single: false, limit: 2, order: undefined });
 
       (openSlots || []).forEach((os: any) => {
         const s = os.schedules;
@@ -2694,19 +2131,7 @@ function TrocaModal({ isOpen, onClose, slot, userMemberships }: any) {
         const ministryId = slot?.ministry_roles?.ministry_id || slot?.schedules?.ministry_id;
         if (!ministryId) return;
 
-        const { data } = await supabase
-          .from('ministry_members')
-          .select(`
-            id,
-            user_id,
-            profiles (
-              id,
-              full_name,
-              avatar_url
-            )
-          `)
-          .eq('ministry_id', ministryId)
-          .eq('status', 'approved');
+        const { data } = previewData('ministry_members', 'read', undefined, (row: any) => getField(row, 'ministry_id') === ministryId && getField(row, 'status') === 'approved', { single: false, limit: undefined, order: undefined });
 
         const currentMemberId = slot?.ministry_member_id;
         setAvailableVolunteers((data || []).filter((m: any) => m.id !== currentMemberId));
@@ -2730,15 +2155,13 @@ function TrocaModal({ isOpen, onClose, slot, userMemberships }: any) {
 
     setSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('schedule_swap_requests')
-        .insert({
+      const { error } = previewData('schedule_swap_requests', 'insert', {
           schedule_member_id: slot.id,
           requester_id: requesterMemberId,
           target_member_id: targetMemberId || null,
           reason: reason || 'Não poderei comparecer.',
           status: 'pending'
-        });
+        }, (row: any) => true, { single: false, limit: undefined, order: undefined });
 
       if (error) {
         toast.error('Erro ao enviar pedido de troca: ' + error.message);
@@ -3172,8 +2595,8 @@ function PerfilView({
   toggleTheme, 
   isDarkMode 
 }: any) {
-  const mockDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  const mockShifts = ['Manhã', 'Tarde', 'Noite'];
+  const DAYS_OF_WEEK = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  const SHIFTS = ['Manhã', 'Tarde', 'Noite'];
   
   const [availability, setAvailability] = useState<Record<string, string[]>>({
     Dom: ['Manhã', 'Noite'],
@@ -3207,6 +2630,9 @@ function PerfilView({
       setFullName(userProfile.full_name || '');
       setPhone(userProfile.phone || '');
       setBirthDate(userProfile.birth_date || '');
+      if (userProfile.availability && typeof userProfile.availability === 'object') {
+        setAvailability(userProfile.availability);
+      }
     }
   }, [userProfile]);
 
@@ -3220,17 +2646,9 @@ function PerfilView({
       }
 
       try {
-        const { count: confirmed } = await supabase
-          .from('schedule_members')
-          .select('id', { count: 'exact', head: true })
-          .in('ministry_member_id', approvedIds)
-          .eq('response', 'confirmed');
+        const { count: confirmed } = previewData('schedule_members', 'read', undefined, (row: any) => (approvedIds).includes(getField(row, 'ministry_member_id')) && getField(row, 'response') === 'confirmed', { single: false, limit: undefined, order: undefined });
 
-        const { count: declined } = await supabase
-          .from('schedule_members')
-          .select('id', { count: 'exact', head: true })
-          .in('ministry_member_id', approvedIds)
-          .eq('response', 'declined');
+        const { count: declined } = previewData('schedule_members', 'read', undefined, (row: any) => (approvedIds).includes(getField(row, 'ministry_member_id')) && getField(row, 'response') === 'declined', { single: false, limit: undefined, order: undefined });
 
         const total = (confirmed || 0) + (declined || 0);
         const rate = total > 0 ? Math.round(((confirmed || 0) / total) * 100) : 100;
@@ -3259,12 +2677,23 @@ function PerfilView({
     });
   };
 
-  const handleSaveAvailability = () => {
+  const handleSaveAvailability = async () => {
+    if (!user?.id) return;
     setSavingAvailability(true);
-    setTimeout(() => {
-      setSavingAvailability(false);
+    try {
+      const { error } = previewData('profiles', 'update', {
+          availability,
+          updated_at: new Date().toISOString()
+        }, (row: any) => getField(row, 'id') === user.id, { single: false, limit: undefined, order: undefined });
+
+      if (error) throw error;
       toast.success('Disponibilidade semanal salva com sucesso!');
-    }, 400);
+      onRefreshProfile?.();
+    } catch (err: any) {
+      toast.error('Erro ao salvar disponibilidade: ' + err.message);
+    } finally {
+      setSavingAvailability(false);
+    }
   };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -3272,15 +2701,12 @@ function PerfilView({
     if (!user?.id) return;
     setSavingProfile(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: fullName,
-          phone: phone || null,
+      const { error } = previewData('profiles', 'update', {
+          full_name: fullName.trim(),
+          phone: phone.trim() || null,
           birth_date: birthDate || null,
           updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
+        }, (row: any) => getField(row, 'id') === user.id, { single: false, limit: undefined, order: undefined });
 
       if (error) {
         toast.error('Erro ao salvar perfil: ' + error.message);
@@ -3289,8 +2715,9 @@ function PerfilView({
         setEditModalOpen(false);
         onRefreshProfile?.();
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao atualizar perfil:', err);
+      toast.error('Erro ao atualizar perfil.');
     } finally {
       setSavingProfile(false);
     }
@@ -3328,9 +2755,9 @@ function PerfilView({
         </div>
         <div className="absolute -bottom-6 right-6 flex gap-2">
           <Button variant="secondary" size="icon" className="cursor-pointer" onClick={() => setEditModalOpen(true)}>
-            <Edit3 className="w-5 h-5" />
+            <Edit2 className="w-5 h-5" />
           </Button>
-          <Button variant="secondary" size="icon" className="cursor-pointer" onClick={() => setSettingsModalOpen(true)}>
+          <Button variant="secondary" size="icon" className="cursor-pointer" onClick={() => navigateTo('configuracoes')}>
             <Settings className="w-5 h-5" />
           </Button>
         </div>
@@ -3395,18 +2822,18 @@ function PerfilView({
               <div className="min-w-[600px] p-6">
                 <div className="grid grid-cols-8 gap-4 mb-4">
                   <div></div>
-                  {mockDays.map(day => (
+                  {DAYS_OF_WEEK.map(day => (
                     <div key={day} className="text-center text-xs font-extrabold text-muted-foreground uppercase tracking-widest">{day}</div>
                   ))}
                 </div>
                 
                 <div className="space-y-4">
-                  {mockShifts.map(shift => (
+                  {SHIFTS.map(shift => (
                     <div key={shift} className="grid grid-cols-8 gap-4 items-center">
                       <div className="text-xs font-extrabold text-muted-foreground uppercase tracking-widest text-right pr-2">
                         {shift}
                       </div>
-                      {mockDays.map(day => {
+                      {DAYS_OF_WEEK.map(day => {
                         const isAvailable = availability[day]?.includes(shift);
                         return (
                           <div 
@@ -3588,18 +3015,11 @@ function ConquistasView({ navigateTo, user, userMemberships = [] }: any) {
       try {
         let confirmedCount = 0;
         if (approvedIds.length > 0) {
-          const { count } = await supabase
-            .from('schedule_members')
-            .select('id', { count: 'exact', head: true })
-            .in('ministry_member_id', approvedIds)
-            .eq('response', 'confirmed');
+          const { count } = previewData('schedule_members', 'read', undefined, (row: any) => (approvedIds).includes(getField(row, 'ministry_member_id')) && getField(row, 'response') === 'confirmed', { single: false, limit: undefined, order: undefined });
           confirmedCount = count || 0;
         }
 
-        const { count: awardsCount } = await supabase
-          .from('volunteer_of_month')
-          .select('id', { count: 'exact', head: true })
-          .eq('volunteer_id', user.id);
+        const { count: awardsCount } = previewData('volunteer_of_month', 'read', undefined, (row: any) => getField(row, 'volunteer_id') === user.id, { single: false, limit: undefined, order: undefined });
 
         setStats({
           totalConfirmed: confirmedCount,
@@ -3677,7 +3097,7 @@ function ConquistasView({ navigateTo, user, userMemberships = [] }: any) {
     }
   ];
 
-  const unlockedBadges = allBadges.filter(b => b.unlocked);
+  const unlockedBadges = allBadges.filter((b: any) => b.unlocked);
   const lockedBadges = allBadges.filter(b => !b.unlocked);
 
   return (
@@ -3806,7 +3226,6 @@ function getMinistryIconComponent(name: string) {
 }
 
 function RegisterView({ onNext, onRegistered }: any) {
-  const { signUp } = useAuth()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -3853,26 +3272,9 @@ function RegisterView({ onNext, onRegistered }: any) {
     }
 
     setLoadingLocal(true)
-    const { error: signUpError } = await signUp(trimmedEmail, password, {
-      full_name: trimmedName,
-      birth_date: birthdate || undefined,
-      phone: trimmedPhone || undefined,
-    })
     setLoadingLocal(false)
-
-    if (signUpError) {
-      let msg = (signUpError as any).message || 'Erro ao criar conta'
-      if (msg.includes('User already registered')) {
-        msg = 'Este e-mail já está cadastrado. Tente fazer login.'
-      } else if (msg.includes('Password should be')) {
-        msg = 'A senha deve ter pelo menos 6 caracteres.'
-      }
-      setError(msg)
-      toast.error(msg)
-    } else {
-      toast.success('Conta criada com sucesso! Agora selecione seu ministério.')
-      onRegistered?.()
-    }
+    toast.info('Demonstração de cadastro concluída. Selecione um ministério.')
+    onRegistered?.()
   }
 
   return (
@@ -4081,7 +3483,7 @@ function RegisterView({ onNext, onRegistered }: any) {
 }
 
 function SelectMinistryView({ onNext }: any) {
-  const { user } = useAuth()
+  const { user } = usePreview()
   const [selected, setSelected] = useState<string[]>([])
   const [ministries, setMinistries] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -4092,11 +3494,7 @@ function SelectMinistryView({ onNext }: any) {
     let isMounted = true
 
     const loadMinistries = async () => {
-      const { data, error: queryError } = await supabase
-        .from('ministries')
-        .select('id, name, description, icon, color')
-        .eq('active', true)
-        .order('name', { ascending: true })
+      const { data, error: queryError } = previewData('ministries', 'read', undefined, (row: any) => getField(row, 'active') === true, { single: false, limit: undefined, order: ['name', { ascending: true }] })
 
       if (!isMounted) return
 
@@ -4143,7 +3541,7 @@ function SelectMinistryView({ onNext }: any) {
       status: 'pending',
     }))
 
-    const { error: insertError } = await supabase.from('ministry_members').insert(rows)
+    const { error: insertError } = previewData('ministry_members', 'insert', rows, (row: any) => true, { single: false, limit: undefined, order: undefined })
 
     setSubmitting(false)
 
@@ -4250,7 +3648,7 @@ function SelectMinistryView({ onNext }: any) {
 }
 
 function PendingApprovalView({ ministries = [], userMemberships = [], onRefreshMemberships, onSignOut }: any) {
-  const { user } = useAuth()
+  const { user } = usePreview()
   const [checking, setChecking] = useState(false)
 
   const handleCheck = async () => {
@@ -4341,10 +3739,7 @@ function MeusMinisteriosView({ user, userMemberships = [], onRefreshMemberships 
     setModalOpen(true);
     setLoading(true);
     try {
-      const { data } = await supabase
-        .from('ministries')
-        .select('*')
-        .order('name');
+      const { data } = previewData('ministries', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['name', {}] });
       setAllMinistries(data || []);
       const available = (data || []).filter((min: any) => !existingMinistryIds.includes(min.id));
       if (available.length > 0) {
@@ -4366,14 +3761,12 @@ function MeusMinisteriosView({ user, userMemberships = [], onRefreshMemberships 
 
     setSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('ministry_members')
-        .insert({
+      const { error } = previewData('ministry_members', 'insert', {
           user_id: user.id,
           ministry_id: selectedMinistryId,
           role: 'volunteer',
           status: 'pending'
-        });
+        }, (row: any) => true, { single: false, limit: undefined, order: undefined });
 
       if (error) {
         toast.error('Erro ao solicitar entrada: ' + error.message);
@@ -4564,123 +3957,29 @@ function AdminDashboardView({ navigateTo, user, userProfile, toggleTheme, isDark
 
     try {
       // 1. Escalas futuras
-      const { count: upcomingCount } = await supabase
-        .from('schedules')
-        .select('id', { count: 'exact', head: true })
-        .gte('date', todayStr);
+      const { count: upcomingCount } = previewData('schedules', 'read', undefined, (row: any) => getField(row, 'date') >= todayStr, { single: false, limit: undefined, order: undefined });
 
       // 2. Confirmações pendentes
-      const { count: pendingConf } = await supabase
-        .from('schedule_members')
-        .select('id', { count: 'exact', head: true })
-        .eq('response', 'pending');
+      const { count: pendingConf } = previewData('schedule_members', 'read', undefined, (row: any) => getField(row, 'response') === 'pending', { single: false, limit: undefined, order: undefined });
 
       // 3. Trocas pendentes
-      const { data: swapsData } = await supabase
-        .from('schedule_swap_requests')
-        .select(`
-          id,
-          reason,
-          created_at,
-          status,
-          schedule_member_id,
-          target_member_id,
-          requester:ministry_members!requester_id (
-            id,
-            profiles (
-              full_name,
-              avatar_url
-            )
-          ),
-          target:ministry_members!target_member_id (
-            id,
-            profiles (
-              full_name
-            )
-          ),
-          schedule_members (
-            id,
-            schedules (
-              id,
-              title,
-              date,
-              start_time,
-              ministries ( name )
-            )
-          )
-        `)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
+      const { data: swapsData } = previewData('schedule_swap_requests', 'read', undefined, (row: any) => getField(row, 'status') === 'pending', { single: false, limit: undefined, order: ['created_at', { ascending: false }] });
 
       setPendingSwaps(swapsData || []);
 
       // 4. Vagas abertas em escalas futuras
-      const { data: openSlotsData } = await supabase
-        .from('schedule_members')
-        .select(`
-          id,
-          role_id,
-          schedule_id,
-          ministry_roles ( id, name ),
-          schedules!inner (
-            id,
-            title,
-            date,
-            start_time,
-            ministries ( name )
-          )
-        `)
-        .is('ministry_member_id', null)
-        .gte('schedules.date', todayStr)
-        .order('schedules(date)', { ascending: true })
-        .limit(3);
+      const { data: openSlotsData } = previewData('schedule_members', 'read', undefined, (row: any) => getField(row, 'ministry_member_id') === null && getField(row, 'schedules.date') >= todayStr, { single: false, limit: 3, order: ['schedules(date)', { ascending: true }] });
 
       setOpenSlots(openSlotsData || []);
 
       // 5. Próximas escalas detalhadas
-      const { data: schedulesList } = await supabase
-        .from('schedules')
-        .select(`
-          id,
-          title,
-          date,
-          start_time,
-          status,
-          ministries ( id, name, color ),
-          schedule_members (
-            id,
-            ministry_member_id,
-            response,
-            ministry_members (
-              id,
-              profiles (
-                full_name,
-                avatar_url
-              )
-            )
-          )
-        `)
-        .gte('date', todayStr)
-        .order('date', { ascending: true })
-        .limit(4);
+      const { data: schedulesList } = previewData('schedules', 'read', undefined, (row: any) => getField(row, 'date') >= todayStr, { single: false, limit: 4, order: ['date', { ascending: true }] });
 
       setUpcomingSchedules(schedulesList || []);
 
       // 6. Voluntário do Mês
       const now = new Date();
-      const { data: volMonth } = await supabase
-        .from('volunteer_of_month')
-        .select(`
-          id,
-          reason,
-          month,
-          year,
-          profiles ( full_name, avatar_url ),
-          ministries ( name )
-        `)
-        .eq('month', now.getMonth() + 1)
-        .eq('year', now.getFullYear())
-        .maybeSingle();
+      const { data: volMonth } = previewData('volunteer_of_month', 'read', undefined, (row: any) => getField(row, 'month') === now.getMonth() + 1 && getField(row, 'year') === now.getFullYear(), { single: true, limit: undefined, order: undefined });
 
       setVolunteerMonth(volMonth);
 
@@ -4704,31 +4003,22 @@ function AdminDashboardView({ navigateTo, user, userProfile, toggleTheme, isDark
 
   const handleApproveSwap = async (swap: any) => {
     try {
-      const { error: swapError } = await supabase
-        .from('schedule_swap_requests')
-        .update({ status: 'approved' })
-        .eq('id', swap.id);
+      const { error: swapError } = previewData('schedule_swap_requests', 'update', { status: 'approved' }, (row: any) => getField(row, 'id') === swap.id, { single: false, limit: undefined, order: undefined });
 
       if (swapError) throw swapError;
 
       if (swap.target_member_id && swap.schedule_member_id) {
-        await supabase
-          .from('schedule_members')
-          .update({
+        previewData('schedule_members', 'update', {
             ministry_member_id: swap.target_member_id,
             response: 'confirmed',
             response_at: new Date().toISOString()
-          })
-          .eq('id', swap.schedule_member_id);
+          }, (row: any) => getField(row, 'id') === swap.schedule_member_id, { single: false, limit: undefined, order: undefined });
       } else if (swap.schedule_member_id) {
-        await supabase
-          .from('schedule_members')
-          .update({
+        previewData('schedule_members', 'update', {
             ministry_member_id: null,
             response: 'pending',
             response_at: null
-          })
-          .eq('id', swap.schedule_member_id);
+          }, (row: any) => getField(row, 'id') === swap.schedule_member_id, { single: false, limit: undefined, order: undefined });
       }
 
       toast.success('Troca aprovada com sucesso!');
@@ -4740,10 +4030,7 @@ function AdminDashboardView({ navigateTo, user, userProfile, toggleTheme, isDark
 
   const handleRejectSwap = async (swapId: string) => {
     try {
-      const { error } = await supabase
-        .from('schedule_swap_requests')
-        .update({ status: 'rejected' })
-        .eq('id', swapId);
+      const { error } = previewData('schedule_swap_requests', 'update', { status: 'rejected' }, (row: any) => getField(row, 'id') === swapId, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
       toast.info('Solicitação de troca recusada.');
@@ -5018,18 +4305,7 @@ function AdminDashboardView({ navigateTo, user, userProfile, toggleTheme, isDark
 
 // --- ADMIN MINISTRIES ---
 
-const mockAdminMinistriesList = [
-  { id: 'louvor', name: 'Louvor', desc: 'Músicos e cantores', members: 24, nextScales: 4, icon: <Music className="w-6 h-6" />, color: 'bg-blue-500' },
-  { id: 'midia', name: 'Mídia', desc: 'Transmissão, projeção e som', members: 12, nextScales: 2, icon: <MonitorPlay className="w-6 h-6" />, color: 'bg-purple-500' },
-  { id: 'recepcao', name: 'Recepção', desc: 'Acolhimento de membros e visitantes', members: 18, nextScales: 3, icon: <HeartHandshake className="w-6 h-6" />, color: 'bg-orange-500' }
-];
 
-const mockFuncoes = [
-  { id: 1, name: 'Teclado', icon: '🎹', qty: 1 },
-  { id: 2, name: 'Vocal', icon: '🎤', qty: 3 },
-  { id: 3, name: 'Bateria', icon: '🥁', qty: 1 },
-  { id: 4, name: 'Violão', icon: '🎸', qty: 1 },
-];
 
 function AdminMinisteriosView({ navigateTo }: any) {
   const [ministries, setMinistries] = useState<any[]>([]);
@@ -5048,25 +4324,7 @@ function AdminMinisteriosView({ navigateTo }: any) {
     const todayStr = new Date().toISOString().split('T')[0];
 
     try {
-      const { data, error } = await supabase
-        .from('ministries')
-        .select(`
-          id,
-          name,
-          description,
-          icon,
-          color,
-          auto_schedule_enabled,
-          ministry_members (
-            id,
-            status
-          ),
-          schedules (
-            id,
-            date
-          )
-        `)
-        .order('name');
+      const { data, error } = previewData('ministries', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['name', {}] });
 
       if (error) throw error;
 
@@ -5102,14 +4360,12 @@ function AdminMinisteriosView({ navigateTo }: any) {
 
     setSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('ministries')
-        .insert({
+      const { error } = previewData('ministries', 'insert', {
           name: name.trim(),
           description: description.trim() || null,
           icon: icon.trim() || 'Users',
           color: color.trim() || '#C6FF4D'
-        });
+        }, (row: any) => true, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
 
@@ -5293,51 +4549,17 @@ function AdminMinisterioDetalhesView({ ministry, navigateTo }: any) {
 
     try {
       // 1. Carregar Funções
-      const { data: rolesData } = await supabase
-        .from('ministry_roles')
-        .select('*')
-        .eq('ministry_id', ministry.id)
-        .order('name');
+      const { data: rolesData } = previewData('ministry_roles', 'read', undefined, (row: any) => getField(row, 'ministry_id') === ministry.id, { single: false, limit: undefined, order: ['name', {}] });
 
       setRoles(rolesData || []);
 
       // 2. Carregar Membros
-      const { data: membersData } = await supabase
-        .from('ministry_members')
-        .select(`
-          id,
-          role,
-          status,
-          created_at,
-          profiles (
-            id,
-            full_name,
-            phone,
-            avatar_url
-          )
-        `)
-        .eq('ministry_id', ministry.id)
-        .order('created_at', { ascending: false });
+      const { data: membersData } = previewData('ministry_members', 'read', undefined, (row: any) => getField(row, 'ministry_id') === ministry.id, { single: false, limit: undefined, order: ['created_at', { ascending: false }] });
 
       setMembers(membersData || []);
 
       // 3. Carregar Escalas
-      const { data: schedulesData } = await supabase
-        .from('schedules')
-        .select(`
-          id,
-          title,
-          date,
-          start_time,
-          status,
-          schedule_members (
-            id,
-            ministry_member_id
-          )
-        `)
-        .eq('ministry_id', ministry.id)
-        .order('date', { ascending: false })
-        .limit(10);
+      const { data: schedulesData } = previewData('schedules', 'read', undefined, (row: any) => getField(row, 'ministry_id') === ministry.id, { single: false, limit: 10, order: ['date', { ascending: false }] });
 
       setSchedules(schedulesData || []);
     } catch (err) {
@@ -5358,12 +4580,10 @@ function AdminMinisterioDetalhesView({ ministry, navigateTo }: any) {
 
     setSubmittingRole(true);
     try {
-      const { error } = await supabase
-        .from('ministry_roles')
-        .insert({
+      const { error } = previewData('ministry_roles', 'insert', {
           ministry_id: ministry.id,
           name: newRoleName.trim()
-        });
+        }, (row: any) => true, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
 
@@ -5380,10 +4600,7 @@ function AdminMinisterioDetalhesView({ ministry, navigateTo }: any) {
 
   const handleDeleteRole = async (roleId: string) => {
     try {
-      const { error } = await supabase
-        .from('ministry_roles')
-        .delete()
-        .eq('id', roleId);
+      const { error } = previewData('ministry_roles', 'delete', undefined, (row: any) => getField(row, 'id') === roleId, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
 
@@ -5397,10 +4614,7 @@ function AdminMinisterioDetalhesView({ ministry, navigateTo }: any) {
   const handleToggleMemberRole = async (memberId: string, currentRole: string) => {
     const newRole = currentRole === 'leader' ? 'volunteer' : 'leader';
     try {
-      const { error } = await supabase
-        .from('ministry_members')
-        .update({ role: newRole })
-        .eq('id', memberId);
+      const { error } = previewData('ministry_members', 'update', { role: newRole }, (row: any) => getField(row, 'id') === memberId, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
 
@@ -5413,10 +4627,7 @@ function AdminMinisterioDetalhesView({ ministry, navigateTo }: any) {
 
   const handleRemoveMember = async (memberId: string) => {
     try {
-      const { error } = await supabase
-        .from('ministry_members')
-        .delete()
-        .eq('id', memberId);
+      const { error } = previewData('ministry_members', 'delete', undefined, (row: any) => getField(row, 'id') === memberId, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
 
@@ -5433,13 +4644,10 @@ function AdminMinisterioDetalhesView({ ministry, navigateTo }: any) {
 
     setSubmittingEdit(true);
     try {
-      const { error } = await supabase
-        .from('ministry_entries' in supabase ? 'ministry_entries' : 'ministries')
-        .update({
+      const { error } = previewData('ministries', 'update', {
           name: name.trim(),
           description: description.trim() || null
-        })
-        .eq('id', ministry.id);
+        }, (row: any) => getField(row, 'id') === ministry.id, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
 
@@ -5556,7 +4764,7 @@ function AdminMinisterioDetalhesView({ ministry, navigateTo }: any) {
                 </Card>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {roles.map(r => (
+                  {roles.map((r: any) => (
                     <Card key={r.id} className="p-4 sm:p-5 flex items-center justify-between group rounded-3xl border-border">
                       <div className="flex items-center gap-3.5 min-w-0">
                         <div className="w-11 h-11 bg-secondary rounded-2xl flex items-center justify-center shrink-0 font-black text-primary border border-border">
@@ -5780,42 +4988,12 @@ function AdminEscalasView({ navigateTo }: any) {
     setLoading(true);
     try {
       // 1. Carregar Ministérios
-      const { data: minList } = await supabase
-        .from('ministries')
-        .select('id, name')
-        .order('name');
+      const { data: minList } = previewData('ministries', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['name', {}] });
 
       setMinistries(minList || []);
 
       // 2. Carregar Escalas
-      const { data: schedulesData, error } = await supabase
-        .from('schedules')
-        .select(`
-          id,
-          title,
-          date,
-          start_time,
-          end_time,
-          location,
-          status,
-          ministries ( id, name, color ),
-          schedule_members (
-            id,
-            role_id,
-            ministry_member_id,
-            response,
-            ministry_roles ( id, name ),
-            ministry_members (
-              id,
-              profiles (
-                id,
-                full_name,
-                avatar_url
-              )
-            )
-          )
-        `)
-        .order('date', { ascending: false });
+      const { data: schedulesData, error } = previewData('schedules', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['date', { ascending: false }] });
 
       if (error) throw error;
       setSchedules(schedulesData || []);
@@ -5834,10 +5012,7 @@ function AdminEscalasView({ navigateTo }: any) {
   const handleTogglePublish = async (scheduleId: string, currentStatus: string) => {
     const nextStatus = currentStatus === 'published' ? 'draft' : 'published';
     try {
-      const { error } = await supabase
-        .from('schedules')
-        .update({ status: nextStatus })
-        .eq('id', scheduleId);
+      const { error } = previewData('schedules', 'update', { status: nextStatus }, (row: any) => getField(row, 'id') === scheduleId, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
 
@@ -5851,10 +5026,7 @@ function AdminEscalasView({ navigateTo }: any) {
   const handleDeleteSchedule = async (scheduleId: string) => {
     if (!confirm('Tem certeza que deseja excluir esta escala?')) return;
     try {
-      const { error } = await supabase
-        .from('schedules')
-        .delete()
-        .eq('id', scheduleId);
+      const { error } = previewData('schedules', 'delete', undefined, (row: any) => getField(row, 'id') === scheduleId, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
 
@@ -6096,13 +5268,13 @@ function AdminEscalaCreateView({ navigateTo }: any) {
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        const { data: minList } = await supabase.from('ministries').select('*').order('name');
+        const { data: minList } = previewData('ministries', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['name', {}] });
         setMinistries(minList || []);
         if (minList && minList.length > 0) {
           setSelectedMinistryId(minList[0].id);
         }
 
-        const { data: songsData } = await supabase.from('songs').select('*').order('title');
+        const { data: songsData } = previewData('songs', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['title', {}] });
         setAllSongs(songsData || []);
       } catch (err) {
         console.error('Erro ao carregar dados iniciais:', err);
@@ -6118,33 +5290,17 @@ function AdminEscalaCreateView({ navigateTo }: any) {
 
     const loadMinistryRolesAndMembers = async () => {
       try {
-        const { data: rolesData } = await supabase
-          .from('ministry_roles')
-          .select('*')
-          .eq('ministry_id', selectedMinistryId)
-          .order('name');
+        const { data: rolesData } = previewData('ministry_roles', 'read', undefined, (row: any) => getField(row, 'ministry_id') === selectedMinistryId, { single: false, limit: undefined, order: ['name', {}] });
 
         setAvailableRoles(rolesData || []);
 
-        const { data: membersData } = await supabase
-          .from('ministry_members')
-          .select(`
-            id,
-            role,
-            profiles (
-              id,
-              full_name,
-              avatar_url
-            )
-          `)
-          .eq('ministry_id', selectedMinistryId)
-          .eq('status', 'approved');
+        const { data: membersData } = previewData('ministry_members', 'read', undefined, (row: any) => getField(row, 'ministry_id') === selectedMinistryId && getField(row, 'status') === 'approved', { single: false, limit: undefined, order: undefined });
 
         setAvailableMembers(membersData || []);
 
         // Pre-fill initial slots from existing roles
         if (rolesData && rolesData.length > 0) {
-          setSlots(rolesData.map(r => ({
+          setSlots(rolesData.map((r: any) => ({
             roleId: r.id,
             roleName: r.name,
             memberId: '',
@@ -6215,9 +5371,7 @@ function AdminEscalaCreateView({ navigateTo }: any) {
     setSubmitting(true);
     try {
       // 1. Inserir Escala
-      const { data: newSchedule, error: sError } = await supabase
-        .from('schedules')
-        .insert({
+      const { data: newSchedule, error: sError } = previewData('schedules', 'insert', {
           ministry_id: selectedMinistryId,
           title: title.trim() || 'Culto de Celebração',
           date: date,
@@ -6225,9 +5379,7 @@ function AdminEscalaCreateView({ navigateTo }: any) {
           end_time: endTime || null,
           location: location.trim() || 'Templo Principal',
           status: asDraft ? 'draft' : 'published'
-        })
-        .select()
-        .single();
+        }, (row: any) => true, { single: true, limit: undefined, order: undefined });
 
       if (sError) throw sError;
 
@@ -6240,9 +5392,7 @@ function AdminEscalaCreateView({ navigateTo }: any) {
           response: 'pending'
         }));
 
-        const { error: smError } = await supabase
-          .from('schedule_members')
-          .insert(memberRows);
+        const { error: smError } = previewData('schedule_members', 'insert', memberRows, (row: any) => true, { single: false, limit: undefined, order: undefined });
 
         if (smError) throw smError;
       }
@@ -6255,9 +5405,7 @@ function AdminEscalaCreateView({ navigateTo }: any) {
           position: idx + 1
         }));
 
-        const { error: songsError } = await supabase
-          .from('schedule_songs')
-          .insert(songRows);
+        const { error: songsError } = previewData('schedule_songs', 'insert', songRows, (row: any) => true, { single: false, limit: undefined, order: undefined });
 
         if (songsError) throw songsError;
       }
@@ -6602,7 +5750,7 @@ function AdminEscalaCreateView({ navigateTo }: any) {
                     </h4>
                     <div className="flex flex-wrap gap-2">
                       {selectedSongIds.map(id => {
-                        const song = allSongs.find(s => s.id === id);
+                        const song = allSongs.find((s: any) => s.id === id);
                         return song ? (
                           <Badge key={id} variant="secondary" className="px-3 py-1 text-xs font-bold">
                             🎵 {song.title} {song.musical_key ? `(${song.musical_key})` : ''}
@@ -6697,35 +5845,11 @@ function AdminVoluntariosView({ navigateTo }: any) {
     setLoading(true);
     try {
       // 1. Carregar Ministérios
-      const { data: minList } = await supabase
-        .from('ministries')
-        .select('id, name')
-        .order('name');
+      const { data: minList } = previewData('ministries', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['name', {}] });
       setMinistries(minList || []);
 
       // 2. Carregar Perfis com Membros
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(`
-          id,
-          full_name,
-          phone,
-          birth_date,
-          avatar_url,
-          role,
-          created_at,
-          ministry_members (
-            id,
-            role,
-            status,
-            ministries (
-              id,
-              name,
-              color
-            )
-          )
-        `)
-        .order('full_name');
+      const { data, error } = previewData('profiles', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['full_name', {}] });
 
       if (error) throw error;
       setVolunteers(data || []);
@@ -6916,23 +6040,7 @@ function AdminVoluntarioPerfilView({ voluntario, navigateTo }: any) {
           return;
         }
 
-        const { data: scheduleMembersData } = await supabase
-          .from('schedule_members')
-          .select(`
-            id,
-            response,
-            response_at,
-            ministry_roles ( id, name ),
-            schedules (
-              id,
-              title,
-              date,
-              start_time,
-              ministries ( name )
-            )
-          `)
-          .in('ministry_member_id', approvedMemberIds)
-          .order('schedules(date)', { ascending: false });
+        const { data: scheduleMembersData } = previewData('schedule_members', 'read', undefined, (row: any) => (approvedMemberIds).includes(getField(row, 'ministry_member_id')), { single: false, limit: undefined, order: ['schedules(date)', { ascending: false }] });
 
         const historyList = scheduleMembersData || [];
         setHistory(historyList);
@@ -6963,15 +6071,13 @@ function AdminVoluntarioPerfilView({ voluntario, navigateTo }: any) {
     const now = new Date();
     try {
       const minId = honorMinistryId || (voluntario.ministry_members?.[0]?.ministries?.id) || null;
-      const { error } = await supabase
-        .from('volunteer_of_month')
-        .insert({
+      const { error } = previewData('volunteer_of_month', 'insert', {
           volunteer_id: voluntario.id,
           ministry_id: minId,
           month: now.getMonth() + 1,
           year: now.getFullYear(),
           reason: honorReason.trim()
-        });
+        }, (row: any) => true, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
 
@@ -7186,65 +6292,12 @@ function AdminSolicitacoesView({ navigateTo }: any) {
     setLoading(true);
     try {
       // 1. Pedidos de entrada em ministério
-      const { data: mReqs } = await supabase
-        .from('ministry_members')
-        .select(`
-          id,
-          role,
-          status,
-          created_at,
-          profiles (
-            id,
-            full_name,
-            phone,
-            avatar_url
-          ),
-          ministries (
-            id,
-            name,
-            color
-          )
-        `)
-        .order('created_at', { ascending: false });
+      const { data: mReqs } = previewData('ministry_members', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['created_at', { ascending: false }] });
 
       setMemberRequests(mReqs || []);
 
       // 2. Pedidos de troca
-      const { data: sReqs } = await supabase
-        .from('schedule_swap_requests')
-        .select(`
-          id,
-          reason,
-          status,
-          created_at,
-          schedule_member_id,
-          target_member_id,
-          requester:ministry_members!requester_id (
-            id,
-            profiles (
-              full_name,
-              avatar_url
-            )
-          ),
-          target:ministry_members!target_member_id (
-            id,
-            profiles (
-              full_name
-            )
-          ),
-          schedule_members (
-            id,
-            ministry_roles ( name ),
-            schedules (
-              id,
-              title,
-              date,
-              start_time,
-              ministries ( name )
-            )
-          )
-        `)
-        .order('created_at', { ascending: false });
+      const { data: sReqs } = previewData('schedule_swap_requests', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['created_at', { ascending: false }] });
 
       setSwapRequests(sReqs || []);
     } catch (err) {
@@ -7261,10 +6314,7 @@ function AdminSolicitacoesView({ navigateTo }: any) {
 
   const handleApproveMember = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('ministry_members')
-        .update({ status: 'approved' })
-        .eq('id', id);
+      const { error } = previewData('ministry_members', 'update', { status: 'approved' }, (row: any) => getField(row, 'id') === id, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
 
@@ -7277,10 +6327,7 @@ function AdminSolicitacoesView({ navigateTo }: any) {
 
   const handleRejectMember = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('ministry_members')
-        .delete()
-        .eq('id', id);
+      const { error } = previewData('ministry_members', 'delete', undefined, (row: any) => getField(row, 'id') === id, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
 
@@ -7293,31 +6340,22 @@ function AdminSolicitacoesView({ navigateTo }: any) {
 
   const handleApproveSwap = async (swap: any) => {
     try {
-      const { error: swapError } = await supabase
-        .from('schedule_swap_requests')
-        .update({ status: 'approved' })
-        .eq('id', swap.id);
+      const { error: swapError } = previewData('schedule_swap_requests', 'update', { status: 'approved' }, (row: any) => getField(row, 'id') === swap.id, { single: false, limit: undefined, order: undefined });
 
       if (swapError) throw swapError;
 
       if (swap.target_member_id && swap.schedule_member_id) {
-        await supabase
-          .from('schedule_members')
-          .update({
+        previewData('schedule_members', 'update', {
             ministry_member_id: swap.target_member_id,
             response: 'confirmed',
             response_at: new Date().toISOString()
-          })
-          .eq('id', swap.schedule_member_id);
+          }, (row: any) => getField(row, 'id') === swap.schedule_member_id, { single: false, limit: undefined, order: undefined });
       } else if (swap.schedule_member_id) {
-        await supabase
-          .from('schedule_members')
-          .update({
+        previewData('schedule_members', 'update', {
             ministry_member_id: null,
             response: 'pending',
             response_at: null
-          })
-          .eq('id', swap.schedule_member_id);
+          }, (row: any) => getField(row, 'id') === swap.schedule_member_id, { single: false, limit: undefined, order: undefined });
       }
 
       toast.success('Troca de escala aprovada!');
@@ -7329,10 +6367,7 @@ function AdminSolicitacoesView({ navigateTo }: any) {
 
   const handleRejectSwap = async (swapId: string) => {
     try {
-      const { error } = await supabase
-        .from('schedule_swap_requests')
-        .update({ status: 'rejected' })
-        .eq('id', swapId);
+      const { error } = previewData('schedule_swap_requests', 'update', { status: 'rejected' }, (row: any) => getField(row, 'id') === swapId, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
 
@@ -7597,46 +6632,20 @@ function AdminRepertorioView() {
     setLoading(true);
     try {
       // 1. Carregar Acervo Geral de Músicas
-      const { data: songsData, error: sErr } = await supabase
-        .from('songs')
-        .select('*')
-        .order('title');
+      const { data: songsData, error: sErr } = previewData('songs', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['title', {}] });
 
       if (sErr) throw sErr;
       setSongs(songsData || []);
 
       // 2. Carregar Escalas com Músicas
-      const { data: schedData, error: scErr } = await supabase
-        .from('schedules')
-        .select(`
-          id,
-          title,
-          date,
-          start_time,
-          ministries ( name ),
-          schedule_songs (
-            id,
-            position,
-            songs (
-              id,
-              title,
-              artist,
-              bpm,
-              musical_key,
-              cifra_url,
-              youtube_url,
-              notes
-            )
-          )
-        `)
-        .order('date', { ascending: false });
+      const { data: schedData, error: scErr } = previewData('schedules', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['date', { ascending: false }] });
 
       if (scErr) throw scErr;
       setSchedulesWithSongs(schedData || []);
 
       // Update selected schedule reference if active
       if (selectedSchedule) {
-        const updated = (schedData || []).find(s => s.id === selectedSchedule.id);
+        const updated = (schedData || []).find((s: any) => s.id === selectedSchedule.id);
         setSelectedSchedule(updated || null);
       }
     } catch (err) {
@@ -7700,16 +6709,11 @@ function AdminRepertorioView() {
       };
 
       if (editingSongId) {
-        const { error } = await supabase
-          .from('songs')
-          .update(payload)
-          .eq('id', editingSongId);
+        const { error } = previewData('songs', 'update', payload, (row: any) => getField(row, 'id') === editingSongId, { single: false, limit: undefined, order: undefined });
         if (error) throw error;
         toast.success('Música atualizada com sucesso!');
       } else {
-        const { error } = await supabase
-          .from('songs')
-          .insert(payload);
+        const { error } = previewData('songs', 'insert', payload, (row: any) => true, { single: false, limit: undefined, order: undefined });
         if (error) throw error;
         toast.success('Música cadastrada no acervo!');
       }
@@ -7729,10 +6733,7 @@ function AdminRepertorioView() {
     if (!window.confirm('Tem certeza que deseja remover esta música do acervo geral?')) return;
 
     try {
-      const { error } = await supabase
-        .from('songs')
-        .delete()
-        .eq('id', songId);
+      const { error } = previewData('songs', 'delete', undefined, (row: any) => getField(row, 'id') === songId, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
       toast.success('Música removida do acervo.');
@@ -7757,13 +6758,11 @@ function AdminRepertorioView() {
 
     try {
       const nextPos = currentSongs.length + 1;
-      const { error } = await supabase
-        .from('schedule_songs')
-        .insert({
+      const { error } = previewData('schedule_songs', 'insert', {
           schedule_id: selectedSchedule.id,
           song_id: song.id,
           position: nextPos
-        });
+        }, (row: any) => true, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
       toast.success(`"${song.title}" adicionada à playlist!`);
@@ -7775,10 +6774,7 @@ function AdminRepertorioView() {
 
   const handleRemoveSongFromSchedule = async (scheduleSongId: string) => {
     try {
-      const { error } = await supabase
-        .from('schedule_songs')
-        .delete()
-        .eq('id', scheduleSongId);
+      const { error } = previewData('schedule_songs', 'delete', undefined, (row: any) => getField(row, 'id') === scheduleSongId, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
       toast.success('Música removida da escala.');
@@ -8023,7 +7019,7 @@ function AdminRepertorioView() {
                         variant="secondary" 
                         size="icon" 
                         className="w-9 h-9 cursor-pointer" 
-                        onClick={(e) => handleOpenEditSong(song, e)}
+                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleOpenEditSong(song, e)}
                       >
                         <Edit2 className="w-4 h-4 text-muted-foreground" />
                       </Button>
@@ -8031,7 +7027,7 @@ function AdminRepertorioView() {
                         variant="ghost" 
                         size="icon" 
                         className="w-9 h-9 text-destructive hover:bg-destructive/10 cursor-pointer" 
-                        onClick={(e) => handleDeleteSong(song.id, e)}
+                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleDeleteSong(song.id, e)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -8170,10 +7166,153 @@ function AdminRepertorioView() {
 
 
 // --- ADMIN FEED ---
-function AdminFeedView() {
+function AdminFeedView({ user, userProfile, navigateTo }: any) {
   const [filterMin, setFilterMin] = useState('Todos');
+  const [posts, setPosts] = useState<any[]>([]);
+  const [ministries, setMinistries] = useState<any[]>([]);
+  const [volunteers, setVolunteers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const [isPostModalOpen, setPostModalOpen] = useState(false);
   const [isVoluntarioModalOpen, setVoluntarioModalOpen] = useState(false);
+
+  // Post form state
+  const [postType, setPostType] = useState('📢 Aviso');
+  const [postMinistryId, setPostMinistryId] = useState('');
+  const [postTitle, setPostTitle] = useState('');
+  const [postContent, setPostContent] = useState('');
+  const [submittingPost, setSubmittingPost] = useState(false);
+
+  // Volunteer of the Month form state
+  const [honorVolunteerId, setHonorVolunteerId] = useState('');
+  const [honorMinistryId, setHonorMinistryId] = useState('');
+  const [honorTitle, setHonorTitle] = useState('Destaque do Mês');
+  const [honorMessage, setHonorMessage] = useState('');
+  const [submittingHonor, setSubmittingHonor] = useState(false);
+
+  const loadFeedAndMetadata = async () => {
+    setLoading(true);
+    try {
+      const { data: minList } = previewData('ministries', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['name', {}] });
+      setMinistries(minList || []);
+
+      const { data: volList } = previewData('profiles', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['full_name', {}] });
+      setVolunteers(volList || []);
+      if (volList && volList.length > 0) {
+        setHonorVolunteerId(volList[0].id);
+      }
+
+      const { data: postsData, error } = previewData('feed_posts', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['created_at', { ascending: false }] });
+
+      if (error) throw error;
+      setPosts(postsData || []);
+    } catch (err) {
+      console.error('Erro ao carregar feed admin:', err);
+      toast.error('Erro ao carregar postagens do feed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadFeedAndMetadata();
+  }, []);
+
+  const handleCreatePost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!postTitle.trim() || !postContent.trim()) {
+      toast.error('Título e mensagem são obrigatórios.');
+      return;
+    }
+
+    setSubmittingPost(true);
+    try {
+      const { error } = previewData('feed_posts', 'insert', {
+          author_id: user?.id,
+          ministry_id: postMinistryId ? postMinistryId : null,
+          type: postType,
+          title: postTitle.trim(),
+          content: postContent.trim()
+        }, (row: any) => true, { single: false, limit: undefined, order: undefined });
+
+      if (error) throw error;
+
+      toast.success('Publicação criada com sucesso!');
+      setPostTitle('');
+      setPostContent('');
+      setPostMinistryId('');
+      setPostModalOpen(false);
+      await loadFeedAndMetadata();
+    } catch (err: any) {
+      toast.error('Erro ao publicar: ' + err.message);
+    } finally {
+      setSubmittingPost(false);
+    }
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    if (!window.confirm('Tem certeza que deseja excluir esta publicação?')) return;
+
+    try {
+      const { error } = previewData('feed_posts', 'delete', undefined, (row: any) => getField(row, 'id') === postId, { single: false, limit: undefined, order: undefined });
+
+      if (error) throw error;
+      toast.success('Publicação removida com sucesso.');
+      setPosts(prev => prev.filter(p => p.id !== postId));
+    } catch (err: any) {
+      toast.error('Erro ao excluir: ' + err.message);
+    }
+  };
+
+  const handlePublishHonor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!honorVolunteerId) {
+      toast.error('Selecione um voluntário.');
+      return;
+    }
+
+    setSubmittingHonor(true);
+    const now = new Date();
+    try {
+      const selectedVol = volunteers.find(v => v.id === honorVolunteerId);
+
+      // 1. Inserir em volunteer_of_month
+      previewData('volunteer_of_month', 'insert', {
+          volunteer_id: honorVolunteerId,
+          ministry_id: honorMinistryId || null,
+          month: now.getMonth() + 1,
+          year: now.getFullYear(),
+          reason: (honorTitle + ' - ' + honorMessage).trim()
+        }, (row: any) => true, { single: false, limit: undefined, order: undefined });
+
+      // 2. Criar post no feed comemorando
+      previewData('feed_posts', 'insert', {
+          author_id: user?.id,
+          ministry_id: honorMinistryId || null,
+          type: '🎉 Aniversário',
+          title: `🏆 Voluntário em Destaque: ${selectedVol?.full_name || 'Voluntário'}!`,
+          content: `${honorTitle}\n\n${honorMessage || 'Parabéns pela dedicação e excelente serviço prestado à igreja!'}`
+        }, (row: any) => true, { single: false, limit: undefined, order: undefined });
+
+      toast.success('Homenagem publicada no mural!');
+      setHonorTitle('Destaque do Mês');
+      setHonorMessage('');
+      setVoluntarioModalOpen(false);
+      await loadFeedAndMetadata();
+    } catch (err: any) {
+      toast.error('Erro ao registrar homenagem: ' + err.message);
+    } finally {
+      setSubmittingHonor(false);
+    }
+  };
+
+  const ministryFilterOptions = ['Todos', ...ministries.map(m => m.name), 'Geral'];
+
+  const filteredPosts = posts.filter(p => {
+    if (filterMin === 'Todos') return true;
+    if (filterMin === 'Geral') return !p.ministries;
+    return p.ministries?.name === filterMin;
+  });
 
   return (
     <div className="p-5 sm:p-6 lg:p-10 max-w-[1000px] mx-auto w-full animate-in fade-in duration-300">
@@ -8185,23 +7324,25 @@ function AdminFeedView() {
           <h1 className="text-3xl sm:text-4xl font-extrabold">Feed da Comunidade</h1>
         </div>
         <div className="flex gap-3">
-          <Button variant="secondary" onClick={() => setVoluntarioModalOpen(true)}>
+          <Button variant="secondary" onClick={() => setVoluntarioModalOpen(true)} className="font-bold cursor-pointer">
             <Trophy className="w-4 h-4 mr-2 text-yellow-500" /> Voluntário do Mês
           </Button>
-          <Button onClick={() => setPostModalOpen(true)}>
-            <Plus className="w-5 h-5" /> Novo Post
+          <Button onClick={() => setPostModalOpen(true)} className="font-bold cursor-pointer">
+            <Plus className="w-4 h-4 mr-1.5" /> Novo Post
           </Button>
         </div>
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-4 hide-scrollbar">
-        {['Todos', 'Louvor', 'Recepção', 'Comunicação', 'Mídia', 'Geral'].map(m => (
+        {ministryFilterOptions.map(m => (
           <button
             key={m}
             onClick={() => setFilterMin(m)}
             className={cn(
-              "whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-all border",
-              filterMin === m ? "bg-foreground text-background border-foreground shadow-sm" : "bg-card text-muted-foreground border-border hover:bg-secondary hover:text-foreground"
+              "whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold transition-all border cursor-pointer",
+              filterMin === m 
+                ? "bg-foreground text-background border-foreground shadow-sm" 
+                : "bg-card text-muted-foreground border-border hover:bg-secondary hover:text-foreground"
             )}
           >
             {m}
@@ -8209,90 +7350,207 @@ function AdminFeedView() {
         ))}
       </div>
 
-      <div className="space-y-6">
-        {mockFeedPosts.filter(p => filterMin === 'Todos' || p.ministry === filterMin).length === 0 ? (
-          <Card className="flex flex-col items-center justify-center py-16 text-center border-dashed">
-            <MessageSquare className="w-12 h-12 text-muted-foreground opacity-50 mb-4" />
-            <h3 className="font-extrabold text-xl mb-2">Feed vazio</h3>
-            <p className="text-muted-foreground font-semibold text-sm max-w-sm">
-              Não existem postagens para este ministério ainda. Seja o primeiro a postar!
-            </p>
-          </Card>
-        ) : mockFeedPosts.filter(p => filterMin === 'Todos' || p.ministry === filterMin).map(post => (
-          <div key={post.id} className="relative group">
-            <div className="absolute -left-3 top-1/2 -translate-y-1/2 hidden sm:flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-              <Button variant="secondary" size="icon" className="w-10 h-10 shadow-md"><Edit2 className="w-4 h-4 text-muted-foreground" /></Button>
-              <Button variant="secondary" size="icon" className="w-10 h-10 shadow-md text-destructive hover:bg-destructive/10"><Trash2 className="w-4 h-4" /></Button>
-            </div>
-            <FeedPost post={post} />
-          </div>
-        ))}
-      </div>
+      {loading ? (
+        <div className="py-20 flex flex-col items-center justify-center">
+          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="font-bold text-muted-foreground">Carregando postagens...</p>
+        </div>
+      ) : filteredPosts.length === 0 ? (
+        <Card className="flex flex-col items-center justify-center py-16 text-center border-dashed rounded-3xl">
+          <MessageSquare className="w-12 h-12 text-muted-foreground opacity-50 mb-4" />
+          <h3 className="font-extrabold text-xl mb-2">Feed vazio</h3>
+          <p className="text-muted-foreground font-semibold text-sm max-w-sm">
+            Não existem postagens para este filtro ainda. Crie uma nova publicação acima!
+          </p>
+        </Card>
+      ) : (
+        <div className="space-y-6">
+          {filteredPosts.map(post => {
+            const feedPostData = {
+              id: post.id,
+              authorName: post.profiles?.full_name || 'Liderança',
+              authorAvatar: post.profiles?.avatar_url,
+              ministry: post.ministries?.name || 'Geral',
+              time: post.created_at ? formatDatePtBR(post.created_at.split('T')[0]) : 'Hoje',
+              type: post.type === '📢 Aviso' ? 'aviso' : post.type === '🎉 Aniversário' ? 'aniversario' : post.type === '🔥 Escala aberta' ? 'escala' : post.type === '🏆 Voluntário' ? 'voluntario' : 'evento',
+              title: post.title,
+              content: `${post.title ? post.title + '\n\n' : ''}${post.content || ''}`,
+              reactions: { heart: post.feed_likes?.length || 0, fire: 0, pray: 0, music: 0 }
+            };
+
+            return (
+              <div key={post.id} className="relative group">
+                <div className="absolute top-4 right-16 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button 
+                    variant="secondary" 
+                    size="xs"
+                    className="shadow-md text-destructive hover:bg-destructive/10 cursor-pointer rounded-full"
+                    onClick={() => handleDeletePost(post.id)}
+                  >
+                    <Trash2 className="w-3.5 h-3.5 mr-1" /> Excluir
+                  </Button>
+                </div>
+                <FeedPost post={feedPostData} />
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Post Modal */}
-      <Modal isOpen={isPostModalOpen} onClose={() => setPostModalOpen(false)} title="Novo Post">
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+      <Modal isOpen={isPostModalOpen} onClose={() => setPostModalOpen(false)} title="Novo Post no Feed">
+        <form onSubmit={handleCreatePost} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold mb-2">Tipo de Post</label>
-              <select className="w-full h-12 bg-secondary/50 border border-border rounded-2xl px-4 text-sm font-bold focus:border-primary">
-                <option>📢 Aviso</option>
-                <option>📅 Evento</option>
-                <option>🔥 Escala aberta</option>
-                <option>🎉 Aniversário</option>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5 ml-1">
+                Tipo de Post
+              </label>
+              <select 
+                value={postType} 
+                onChange={e => setPostType(e.target.value)}
+                className="w-full h-11 bg-secondary/50 border border-border rounded-2xl px-4 text-sm font-bold focus:outline-none focus:border-primary"
+              >
+                <option value="📢 Aviso">📢 Aviso</option>
+                <option value="📅 Evento">📅 Evento</option>
+                <option value="🔥 Escala aberta">🔥 Escala aberta</option>
+                <option value="🎉 Aniversário">🎉 Celebração / Destaque</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-bold mb-2">Ministério Alvo</label>
-              <select className="w-full h-12 bg-secondary/50 border border-border rounded-2xl px-4 text-sm font-bold focus:border-primary">
-                <option>Geral (Todos)</option>
-                <option>Louvor</option>
-                <option>Mídia</option>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5 ml-1">
+                Ministério Alvo
+              </label>
+              <select 
+                value={postMinistryId} 
+                onChange={e => setPostMinistryId(e.target.value)}
+                className="w-full h-11 bg-secondary/50 border border-border rounded-2xl px-4 text-sm font-bold focus:outline-none focus:border-primary"
+              >
+                <option value="">Geral (Todos os voluntários)</option>
+                {ministries.map(m => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
               </select>
             </div>
           </div>
-          <div><label className="block text-sm font-bold mb-2">Título do Post</label><input type="text" className="w-full h-12 bg-secondary/50 border border-border rounded-2xl px-4 text-sm font-bold focus:border-primary" /></div>
-          <div><label className="block text-sm font-bold mb-2">Mensagem</label><textarea className="w-full min-h-[120px] bg-secondary/50 border border-border rounded-2xl p-4 text-sm font-bold focus:border-primary resize-none"></textarea></div>
+
           <div>
-            <label className="block text-sm font-bold mb-2">Imagem (Opcional)</label>
-            <div className="w-full h-24 border-2 border-dashed border-border rounded-2xl flex items-center justify-center text-muted-foreground hover:border-primary/50 cursor-pointer hover:bg-secondary/30 transition-colors">
-              <Camera className="w-6 h-6 mr-2" /> <span className="font-bold text-sm">Fazer upload de imagem</span>
-            </div>
+            <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5 ml-1">
+              Título do Post *
+            </label>
+            <input 
+              type="text" 
+              required
+              value={postTitle} 
+              onChange={e => setPostTitle(e.target.value)}
+              placeholder="Ex: Ensaio geral confirmado para esta quinta-feira!"
+              className="w-full h-11 bg-secondary/50 border border-border rounded-2xl px-4 text-sm font-bold focus:outline-none focus:border-primary" 
+            />
           </div>
-          <div className="flex gap-3 pt-4"><Button variant="secondary" className="flex-1" onClick={() => setPostModalOpen(false)}>Cancelar</Button><Button className="flex-1" onClick={() => setPostModalOpen(false)}>Publicar Post</Button></div>
-        </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5 ml-1">
+              Mensagem *
+            </label>
+            <textarea 
+              rows={4}
+              required
+              value={postContent} 
+              onChange={e => setPostContent(e.target.value)}
+              placeholder="Escreva a mensagem que deseja compartilhar com a equipe..."
+              className="w-full bg-secondary/50 border border-border rounded-2xl p-4 text-sm font-bold focus:outline-none focus:border-primary resize-none"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4 border-t border-border mt-4">
+            <Button type="button" variant="secondary" className="flex-1 font-bold cursor-pointer" onClick={() => setPostModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" className="flex-1 font-bold cursor-pointer" disabled={submittingPost}>
+              {submittingPost ? 'Publicando...' : 'Publicar Post'}
+            </Button>
+          </div>
+        </form>
       </Modal>
 
       {/* Voluntario do Mes Modal */}
       <Modal isOpen={isVoluntarioModalOpen} onClose={() => setVoluntarioModalOpen(false)} title="Eleger Voluntário do Mês">
-        <div className="space-y-4">
+        <form onSubmit={handlePublishHonor} className="space-y-4">
           <div className="flex justify-center mb-2">
-            <div className="w-24 h-24 bg-primary/20 rounded-full flex items-center justify-center relative shadow-inner">
+            <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center relative shadow-inner">
               <Trophy className="w-10 h-10 text-primary" />
             </div>
           </div>
-          <p className="text-center font-semibold text-muted-foreground text-sm mb-6">Celebre publicamente o esforço de quem tem feito a diferença na equipe.</p>
+          <p className="text-center font-semibold text-muted-foreground text-xs mb-4">
+            Celebre publicamente o esforço e dedicação de quem fez a diferença na equipe.
+          </p>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold mb-2">Pessoa</label>
-              <select className="w-full h-12 bg-secondary/50 border border-border rounded-2xl px-4 text-sm font-bold focus:border-primary">
-                {mockVoluntarios.map(v => <option key={v.id}>{v.name}</option>)}
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5 ml-1">
+                Voluntário Homenageado *
+              </label>
+              <select 
+                value={honorVolunteerId} 
+                onChange={e => setHonorVolunteerId(e.target.value)}
+                className="w-full h-11 bg-secondary/50 border border-border rounded-2xl px-4 text-sm font-bold focus:outline-none focus:border-primary"
+              >
+                {volunteers.map(v => (
+                  <option key={v.id} value={v.id}>{v.full_name || 'Voluntário'}</option>
+                ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-bold mb-2">Ministério</label>
-              <select className="w-full h-12 bg-secondary/50 border border-border rounded-2xl px-4 text-sm font-bold focus:border-primary">
-                <option>Louvor</option>
-                <option>Mídia</option>
-                <option>Geral</option>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5 ml-1">
+                Ministério
+              </label>
+              <select 
+                value={honorMinistryId} 
+                onChange={e => setHonorMinistryId(e.target.value)}
+                className="w-full h-11 bg-secondary/50 border border-border rounded-2xl px-4 text-sm font-bold focus:outline-none focus:border-primary"
+              >
+                <option value="">Geral / Todos</option>
+                {ministries.map(m => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
               </select>
             </div>
           </div>
-          <div><label className="block text-sm font-bold mb-2">Título da Conquista</label><input type="text" className="w-full h-12 bg-secondary/50 border border-border rounded-2xl px-4 text-sm font-bold focus:border-primary" placeholder="Ex: Maior assiduidade, Sempre pronto a ajudar..." /></div>
-          <div><label className="block text-sm font-bold mb-2">Mensagem de Homenagem</label><textarea className="w-full min-h-[100px] bg-secondary/50 border border-border rounded-2xl p-4 text-sm font-bold focus:border-primary resize-none"></textarea></div>
-          <div className="flex gap-3 pt-4"><Button variant="secondary" className="flex-1" onClick={() => setVoluntarioModalOpen(false)}>Cancelar</Button><Button className="flex-1" onClick={() => setVoluntarioModalOpen(false)}>Publicar Homenagem</Button></div>
-        </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5 ml-1">
+              Título da Conquista
+            </label>
+            <input 
+              type="text" 
+              value={honorTitle} 
+              onChange={e => setHonorTitle(e.target.value)}
+              className="w-full h-11 bg-secondary/50 border border-border rounded-2xl px-4 text-sm font-bold focus:outline-none focus:border-primary" 
+              placeholder="Ex: Maior assiduidade, Sempre pronto a ajudar..." 
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5 ml-1">
+              Mensagem de Reconhecimento
+            </label>
+            <textarea 
+              rows={3}
+              value={honorMessage} 
+              onChange={e => setHonorMessage(e.target.value)}
+              className="w-full bg-secondary/50 border border-border rounded-2xl p-4 text-sm font-bold focus:outline-none focus:border-primary resize-none"
+              placeholder="Ex: Agradecemos de coração por todo amor e dedicação que você coloca no ministério todos os finais de semana!"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4 border-t border-border mt-4">
+            <Button type="button" variant="secondary" className="flex-1 font-bold cursor-pointer" onClick={() => setVoluntarioModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" className="flex-1 font-bold cursor-pointer" disabled={submittingHonor}>
+              {submittingHonor ? 'Publicando...' : 'Publicar Homenagem'}
+            </Button>
+          </div>
+        </form>
       </Modal>
 
     </div>
@@ -8301,22 +7559,102 @@ function AdminFeedView() {
 
 // --- ADMIN RELATORIOS ---
 
-function AdminRelatoriosView() {
-  const [filterMin, setFilterMin] = useState('Todos os Ministérios');
+function AdminRelatoriosView({ navigateTo }: any) {
   const [filterPeriod, setFilterPeriod] = useState('Últimos 30 dias');
+  const [filterMin, setFilterMin] = useState('Todos os Ministérios');
+  const [loading, setLoading] = useState(true);
 
+  const [schedules, setSchedules] = useState<any[]>([]);
+  const [scheduleMembers, setScheduleMembers] = useState<any[]>([]);
+  const [swapRequests, setSwapRequests] = useState<any[]>([]);
+  const [ministries, setMinistries] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadReportData = async () => {
+      setLoading(true);
+      try {
+        const { data: minData } = previewData('ministries', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['name', {}] });
+        setMinistries(minData || []);
+
+        const { data: schedData } = previewData('schedules', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['date', { ascending: true }] });
+        setSchedules(schedData || []);
+
+        const { data: smData } = previewData('schedule_members', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: undefined });
+        setScheduleMembers(smData || []);
+
+        const { data: swapData } = previewData('schedule_swap_requests', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: undefined });
+        setSwapRequests(swapData || []);
+      } catch (err) {
+        console.error('Erro ao carregar dados do relatório:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void loadReportData();
+  }, []);
+
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  // Filter schedules based on ministry selection
+  const filteredSchedules = schedules.filter(s => {
+    if (filterMin === 'Todos os Ministérios') return true;
+    return s.ministries?.name === filterMin;
+  });
+
+  const filteredScheduleIds = new Set(filteredSchedules.map(s => s.id));
+  const relevantMembers = scheduleMembers.filter(sm => filteredScheduleIds.has(sm.schedule_id));
+
+  // KPIs
+  const pastSchedules = filteredSchedules.filter(s => s.date <= todayStr);
+  const totalCompletedSchedules = pastSchedules.length || filteredSchedules.length;
+  
+  const confirmedResponses = relevantMembers.filter(m => m.response === 'confirmed').length;
+  const declinedResponses = relevantMembers.filter(m => m.response === 'declined').length;
+  const totalSlots = relevantMembers.length;
+  const attendanceRate = totalSlots > 0 ? Math.round((confirmedResponses / totalSlots) * 100) : 95;
+
+  const totalSwaps = swapRequests.length;
+
+  // Incomplete future schedules
+  const futureSchedules = filteredSchedules.filter(s => s.date >= todayStr);
+  const openSlotsFuture = futureSchedules.filter(s => {
+    const slots = scheduleMembers.filter(sm => sm.schedule_id === s.id);
+    return slots.some(sm => !sm.ministry_member_id);
+  });
+
+  // Escalas por Ministério Pie Data
+  const ministryColorMap: Record<string, string> = {
+    'Louvor': '#3b82f6',
+    'Mídia': '#a855f7',
+    'Recepção': '#f97316',
+    'Comunicação': '#22c55e',
+    'Infantil': '#ec4899',
+    'Intercessão': '#eab308'
+  };
+
+  const ministryCounts: Record<string, { count: number; color: string }> = {};
+  schedules.forEach(s => {
+    const name = s.ministries?.name || 'Geral';
+    const color = s.ministries?.color || ministryColorMap[name] || '#8884d8';
+    if (!ministryCounts[name]) {
+      ministryCounts[name] = { count: 0, color };
+    }
+    ministryCounts[name].count += 1;
+  });
+
+  const pieData = Object.entries(ministryCounts).map(([name, val]) => ({
+    name,
+    value: val.count,
+    color: val.color
+  }));
+
+  // Presenca semanal mock data adjusted to actual rate
   const presencaData = [
-    { name: 'Sem 1', prev: 80, real: 95 },
-    { name: 'Sem 2', prev: 80, real: 92 },
-    { name: 'Sem 3', prev: 80, real: 100 },
-    { name: 'Sem 4', prev: 80, real: 85 },
-  ];
-
-  const pieData = [
-    { name: 'Louvor', value: 35, color: '#3b82f6' },
-    { name: 'Mídia', value: 20, color: '#a855f7' },
-    { name: 'Recepção', value: 25, color: '#f97316' },
-    { name: 'Comunicação', value: 20, color: '#22c55e' },
+    { name: 'Sem 1', prev: 85, real: Math.min(100, Math.max(60, attendanceRate - 3)) },
+    { name: 'Sem 2', prev: 85, real: Math.min(100, Math.max(60, attendanceRate + 2)) },
+    { name: 'Sem 3', prev: 85, real: Math.min(100, Math.max(60, attendanceRate - 1)) },
+    { name: 'Sem 4', prev: 85, real: Math.min(100, Math.max(60, attendanceRate + 4)) },
   ];
 
   return (
@@ -8328,137 +7666,223 @@ function AdminRelatoriosView() {
           <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-1 flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-primary" /> Painel de Controle
           </p>
-          <h1 className="text-3xl sm:text-4xl font-extrabold">Relatórios</h1>
+          <h1 className="text-3xl sm:text-4xl font-extrabold">Relatórios & Métricas</h1>
         </div>
         
         <div className="flex flex-col sm:flex-row gap-3">
-          <select value={filterPeriod} onChange={(e) => setFilterPeriod(e.target.value)} className="h-10 bg-card border border-border rounded-xl px-4 text-sm font-bold focus:outline-none focus:border-primary">
+          <select 
+            value={filterPeriod} 
+            onChange={(e) => setFilterPeriod(e.target.value)} 
+            className="h-11 bg-card border border-border rounded-2xl px-4 text-sm font-bold focus:outline-none focus:border-primary cursor-pointer"
+          >
             <option>Últimos 30 dias</option>
             <option>Este Mês</option>
             <option>Mês Passado</option>
             <option>Este Ano</option>
           </select>
-          <select value={filterMin} onChange={(e) => setFilterMin(e.target.value)} className="h-10 bg-card border border-border rounded-xl px-4 text-sm font-bold focus:outline-none focus:border-primary">
-            <option>Todos os Ministérios</option>
-            <option>Louvor</option>
-            <option>Mídia</option>
-            <option>Recepção</option>
+          <select 
+            value={filterMin} 
+            onChange={(e) => setFilterMin(e.target.value)} 
+            className="h-11 bg-card border border-border rounded-2xl px-4 text-sm font-bold focus:outline-none focus:border-primary cursor-pointer"
+          >
+            <option value="Todos os Ministérios">Todos os Ministérios</option>
+            {ministries.map(m => (
+              <option key={m.id} value={m.name}>{m.name}</option>
+            ))}
           </select>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-        <Card className="p-5 bg-gradient-to-br from-card to-secondary/30">
-          <div className="w-10 h-10 bg-primary/20 text-primary rounded-xl flex items-center justify-center mb-4"><Calendar className="w-5 h-5" /></div>
-          <p className="text-3xl font-extrabold mb-1">124</p>
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">Escalas Realizadas <TrendingUp className="w-3 h-3 text-green-500 ml-1" /></p>
-        </Card>
-        
-        <Card className="p-5 bg-gradient-to-br from-card to-secondary/30">
-          <div className="w-10 h-10 bg-green-500/10 text-green-500 rounded-xl flex items-center justify-center mb-4"><CheckCircle2 className="w-5 h-5" /></div>
-          <p className="text-3xl font-extrabold mb-1">92%</p>
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">Média de Presença</p>
-        </Card>
-
-        <Card className="p-5 bg-gradient-to-br from-card to-secondary/30">
-          <div className="w-10 h-10 bg-orange-500/10 text-orange-500 rounded-xl flex items-center justify-center mb-4"><ArrowRightLeft className="w-5 h-5" /></div>
-          <p className="text-3xl font-extrabold mb-1">15</p>
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">Trocas Solicitadas</p>
-        </Card>
-
-        <Card className="p-5 bg-gradient-to-br from-card to-secondary/30 border-red-500/20">
-          <div className="w-10 h-10 bg-red-500/10 text-red-500 rounded-xl flex items-center justify-center mb-4"><XCircle className="w-5 h-5" /></div>
-          <p className="text-3xl font-extrabold mb-1 text-red-500">3</p>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-red-500 flex items-center gap-1">Recusas / Faltas</p>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-        
-        {/* Gráfico 1 - Presença */}
-        <Card className="p-6">
-          <div className="mb-6">
-            <h3 className="text-lg font-extrabold">Assiduidade por Semana</h3>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Comparativo de presença real vs. projetada</p>
-          </div>
-          <div className="h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={presencaData} margin={{ top: 5, right: 0, left: -25, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-                <XAxis dataKey="name" tick={{ fontSize: 12, fontWeight: 'bold', fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: 'var(--card)', borderRadius: '12px', border: '1px solid var(--border)', fontWeight: 'bold' }} 
-                  itemStyle={{ fontWeight: 'bold' }}
-                />
-                <Line key="real-line" type="monotone" dataKey="real" name="Presença Real (%)" stroke="var(--primary)" strokeWidth={4} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
-                <Line key="prev-line" type="monotone" dataKey="prev" name="Meta (%)" stroke="var(--muted-foreground)" strokeWidth={2} strokeDasharray="5 5" dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
-        {/* Gráfico 2 - Distribuição */}
-        <Card className="p-6">
-          <div className="mb-2">
-            <h3 className="text-lg font-extrabold">Escalas por Ministério</h3>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Distribuição do volume de escalas no período</p>
-          </div>
-          <div className="h-[250px] w-full flex items-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <RechartsPieChart>
-                <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={5} dataKey="value" nameKey="name">
-                  {pieData.map((entry, index) => (
-                    <Cell key={`pie-cell-${index}-${entry.name.replace(/\s+/g, '-').toLowerCase()}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ backgroundColor: 'var(--card)', borderRadius: '12px', border: '1px solid var(--border)', fontWeight: 'bold' }} 
-                  itemStyle={{ fontWeight: 'bold' }}
-                />
-              </RechartsPieChart>
-            </ResponsiveContainer>
-            
-            {/* Custom Legend */}
-            <div className="flex flex-col gap-3 ml-4 shrink-0">
-              {pieData.map(item => (
-                <div key={item.name} className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                  <span className="text-sm font-bold">{item.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Card>
-        
-        {/* Painel Extra - Alertas */}
-        <div className="lg:col-span-2">
-          <Card className="bg-red-500/5 border-red-500/20">
-            <div className="flex items-center gap-3 mb-4">
-              <AlertTriangle className="w-5 h-5 text-red-500" />
-              <h3 className="text-lg font-extrabold text-red-500">Atenção: 4 Escalas Incompletas</h3>
-            </div>
-            <p className="text-sm font-semibold text-muted-foreground mb-4">
-              Existem eventos próximos no ministério de <strong>Mídia</strong> e <strong>Recepção</strong> com vagas em aberto que podem comprometer a execução.
-            </p>
-            <Button variant="outline" className="border-red-500/50 text-red-500 hover:bg-red-500/10">Ver escalas com problema</Button>
-          </Card>
+      {loading ? (
+        <div className="py-24 flex flex-col items-center justify-center">
+          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="font-bold text-muted-foreground">Calculando métricas em tempo real...</p>
         </div>
+      ) : (
+        <>
+          {/* KPI Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+            <Card className="p-5 bg-gradient-to-br from-card to-secondary/30 rounded-3xl border-border">
+              <div className="w-10 h-10 bg-primary/20 text-primary rounded-xl flex items-center justify-center mb-4">
+                <Calendar className="w-5 h-5" />
+              </div>
+              <p className="text-3xl font-extrabold mb-1">{totalCompletedSchedules}</p>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                Escalas Realizadas <TrendingUp className="w-3 h-3 text-green-500 ml-1" />
+              </p>
+            </Card>
+            
+            <Card className="p-5 bg-gradient-to-br from-card to-secondary/30 rounded-3xl border-border">
+              <div className="w-10 h-10 bg-green-500/10 text-green-500 rounded-xl flex items-center justify-center mb-4">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <p className="text-3xl font-extrabold mb-1">{attendanceRate}%</p>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                Média de Presença
+              </p>
+            </Card>
 
-      </div>
+            <Card className="p-5 bg-gradient-to-br from-card to-secondary/30 rounded-3xl border-border">
+              <div className="w-10 h-10 bg-orange-500/10 text-orange-500 rounded-xl flex items-center justify-center mb-4">
+                <ArrowRightLeft className="w-5 h-5" />
+              </div>
+              <p className="text-3xl font-extrabold mb-1">{totalSwaps}</p>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                Trocas Solicitadas
+              </p>
+            </Card>
+
+            <Card className="p-5 bg-gradient-to-br from-card to-secondary/30 border-red-500/20 rounded-3xl">
+              <div className="w-10 h-10 bg-red-500/10 text-red-500 rounded-xl flex items-center justify-center mb-4">
+                <XCircle className="w-5 h-5" />
+              </div>
+              <p className="text-3xl font-extrabold mb-1 text-red-500">{declinedResponses}</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-red-500 flex items-center gap-1">
+                Recusas de Escala
+              </p>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-8">
+            
+            {/* Gráfico 1 - Presença */}
+            <Card className="p-6 rounded-3xl border-border">
+              <div className="mb-6">
+                <h3 className="text-lg font-extrabold">Assiduidade por Período</h3>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                  Comparativo de presença real vs. projetada
+                </p>
+              </div>
+              <div className="h-[250px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={presencaData} margin={{ top: 5, right: 0, left: -25, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                    <XAxis dataKey="name" tick={{ fontSize: 12, fontWeight: 'bold', fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: 'var(--card)', borderRadius: '12px', border: '1px solid var(--border)', fontWeight: 'bold' }} 
+                      itemStyle={{ fontWeight: 'bold' }}
+                    />
+                    <Line key="real-line" type="monotone" dataKey="real" name="Presença Real (%)" stroke="var(--primary)" strokeWidth={4} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                    <Line key="prev-line" type="monotone" dataKey="prev" name="Meta (%)" stroke="var(--muted-foreground)" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+
+            {/* Gráfico 2 - Distribuição */}
+            <Card className="p-6 rounded-3xl border-border">
+              <div className="mb-2">
+                <h3 className="text-lg font-extrabold">Escalas por Ministério</h3>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                  Distribuição do volume de escalas no período
+                </p>
+              </div>
+              <div className="h-[250px] w-full flex items-center justify-between">
+                <div className="h-full flex-1">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsPieChart>
+                      <Pie data={pieData.length > 0 ? pieData : [{ name: 'Sem dados', value: 1, color: '#8884d8' }]} cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={5} dataKey="value" nameKey="name">
+                        {(pieData.length > 0 ? pieData : [{ name: 'Sem dados', value: 1, color: '#8884d8' }]).map((entry, index) => (
+                          <Cell key={`pie-cell-${index}-${entry.name.replace(/\s+/g, '-').toLowerCase()}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: 'var(--card)', borderRadius: '12px', border: '1px solid var(--border)', fontWeight: 'bold' }} 
+                        itemStyle={{ fontWeight: 'bold' }}
+                      />
+                    </RechartsPieChart>
+                  </ResponsiveContainer>
+                </div>
+                
+                {/* Custom Legend */}
+                <div className="flex flex-col gap-2.5 ml-4 shrink-0 max-h-[220px] overflow-y-auto custom-scrollbar pr-1">
+                  {pieData.map(item => (
+                    <div key={item.name} className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+                      <span className="text-xs font-extrabold">{item.name} ({item.value})</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Card>
+
+          </div>
+
+          {/* Painel Extra - Alertas */}
+          <div className="w-full">
+            <Card className={cn("p-6 rounded-3xl", openSlotsFuture.length > 0 ? "bg-red-500/5 border-red-500/20" : "bg-card border-border")}>
+              <div className="flex items-center gap-3 mb-2">
+                <AlertTriangle className={cn("w-5 h-5", openSlotsFuture.length > 0 ? "text-red-500" : "text-green-500")} />
+                <h3 className={cn("text-lg font-extrabold", openSlotsFuture.length > 0 ? "text-red-500" : "text-foreground")}>
+                  {openSlotsFuture.length > 0 
+                    ? `Atenção: ${openSlotsFuture.length} ${openSlotsFuture.length === 1 ? 'Escala Incompleta' : 'Escalas Incompletas'}`
+                    : 'Todas as próximas escalas estão preenchidas!'}
+                </h3>
+              </div>
+              <p className="text-sm font-semibold text-muted-foreground mb-4">
+                {openSlotsFuture.length > 0 
+                  ? `Existem cultos próximos nos ministérios (${Array.from(new Set(openSlotsFuture.map(s => s.ministries?.name).filter(Boolean))).join(', ')}) com vagas em aberto.`
+                  : 'A equipe está 100% montada para os próximos eventos.'}
+              </p>
+              {openSlotsFuture.length > 0 && (
+                <Button 
+                  variant="outline" 
+                  className="border-red-500/50 text-red-500 hover:bg-red-500/10 font-bold cursor-pointer"
+                  onClick={() => navigateTo && navigateTo('admin_escalas')}
+                >
+                  Ver escalas com problema
+                </Button>
+              )}
+            </Card>
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
 // --- CONFIGURAÇÕES ---
 
-function ConfiguracoesView({ toggleTheme, isDarkMode, navigateTo, user, userProfile, signOut }: any) {
-  const { signOut: authSignOut } = useAuth();
+function ConfiguracoesView({ toggleTheme, isDarkMode, navigateTo, user, userProfile, onRefreshProfile, showLogin }: any) {
+  const { showLogin: authSignOut } = usePreview();
   const [pushNotif, setPushNotif] = useState(true);
   const [whatsappNotif, setWhatsappNotif] = useState(false);
   const [selectedColor, setSelectedColor] = useState('#C6FF4D');
+
+  const [cfgFullName, setCfgFullName] = useState(userProfile?.full_name || '');
+  const [cfgPhone, setCfgPhone] = useState(userProfile?.phone || '');
+  const [savingAccount, setSavingAccount] = useState(false);
+
+  useEffect(() => {
+    if (userProfile) {
+      setCfgFullName(userProfile.full_name || '');
+      setCfgPhone(userProfile.phone || '');
+    }
+  }, [userProfile]);
+
+  const handleSaveAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user?.id) return;
+    setSavingAccount(true);
+    try {
+      const { error } = previewData('profiles', 'update', {
+          full_name: cfgFullName.trim(),
+          phone: cfgPhone.trim() || null,
+          updated_at: new Date().toISOString()
+        }, (row: any) => getField(row, 'id') === user.id, { single: false, limit: undefined, order: undefined });
+
+      if (error) throw error;
+      toast.success('Dados salvos com sucesso!');
+      onRefreshProfile?.();
+    } catch (err: any) {
+      toast.error('Erro ao salvar alterações: ' + err.message);
+    } finally {
+      setSavingAccount(false);
+    }
+  };
   
+
   const colors = [
     { name: 'Neon Green', hex: '#C6FF4D' },
     { name: 'Ocean Blue', hex: '#3b82f6' },
@@ -8474,8 +7898,8 @@ function ConfiguracoesView({ toggleTheme, isDarkMode, navigateTo, user, userProf
 
   const handleLogout = async () => {
     try {
-      if (signOut) {
-        await signOut();
+      if (showLogin) {
+        await showLogin();
       } else {
         await authSignOut();
       }
@@ -8489,7 +7913,7 @@ function ConfiguracoesView({ toggleTheme, isDarkMode, navigateTo, user, userProf
     <div className="p-5 sm:p-6 lg:p-10 max-w-[800px] mx-auto w-full animate-in fade-in duration-300">
       
       <div className="flex items-center gap-4 mb-8">
-        <Button variant="secondary" size="icon" onClick={() => navigateTo('perfil')} className="md:hidden">
+        <Button variant="secondary" size="icon" onClick={() => navigateTo('perfil')} className="md:hidden cursor-pointer">
           <ChevronLeft className="w-5 h-5" />
         </Button>
         <div>
@@ -8513,7 +7937,7 @@ function ConfiguracoesView({ toggleTheme, isDarkMode, navigateTo, user, userProf
               </div>
               <button 
                 onClick={toggleTheme}
-                className={cn("w-14 h-8 rounded-full transition-colors relative", isDarkMode ? "bg-primary" : "bg-secondary border border-border")}
+                className={cn("w-14 h-8 rounded-full transition-colors relative cursor-pointer", isDarkMode ? "bg-primary" : "bg-secondary border border-border")}
               >
                 <div className={cn("absolute top-1 w-6 h-6 rounded-full bg-background shadow-sm transition-all flex items-center justify-center", isDarkMode ? "left-7" : "left-1")}>
                   {isDarkMode ? <Moon className="w-3.5 h-3.5 text-foreground" /> : <Sun className="w-3.5 h-3.5 text-foreground" />}
@@ -8529,7 +7953,7 @@ function ConfiguracoesView({ toggleTheme, isDarkMode, navigateTo, user, userProf
                   <button 
                     key={c.hex}
                     onClick={() => handleColorChange(c.hex)}
-                    className={cn("w-12 h-12 rounded-full flex items-center justify-center transition-all", selectedColor === c.hex ? "ring-2 ring-offset-2 ring-offset-background scale-110 shadow-md" : "hover:scale-105 border border-border/10")}
+                    className={cn("w-12 h-12 rounded-full flex items-center justify-center transition-all cursor-pointer", selectedColor === c.hex ? "ring-2 ring-offset-2 ring-offset-background scale-110 shadow-md" : "hover:scale-105 border border-border/10")}
                     style={{ backgroundColor: c.hex }}
                   >
                     {selectedColor === c.hex && <Check className="w-5 h-5 text-[#111111]" />}
@@ -8556,7 +7980,7 @@ function ConfiguracoesView({ toggleTheme, isDarkMode, navigateTo, user, userProf
               </div>
               <button 
                 onClick={() => setPushNotif(!pushNotif)}
-                className={cn("w-12 h-6 rounded-full transition-colors relative", pushNotif ? "bg-primary" : "bg-secondary border border-border")}
+                className={cn("w-12 h-6 rounded-full transition-colors relative cursor-pointer", pushNotif ? "bg-primary" : "bg-secondary border border-border")}
               >
                 <div className={cn("absolute top-1 w-4 h-4 rounded-full bg-background shadow-sm transition-all", pushNotif ? "left-7" : "left-1")}></div>
               </button>
@@ -8574,7 +7998,7 @@ function ConfiguracoesView({ toggleTheme, isDarkMode, navigateTo, user, userProf
               </div>
               <button 
                 onClick={() => setWhatsappNotif(!whatsappNotif)}
-                className={cn("w-12 h-6 rounded-full transition-colors relative", whatsappNotif ? "bg-primary" : "bg-secondary border border-border")}
+                className={cn("w-12 h-6 rounded-full transition-colors relative cursor-pointer", whatsappNotif ? "bg-primary" : "bg-secondary border border-border")}
               >
                 <div className={cn("absolute top-1 w-4 h-4 rounded-full bg-background shadow-sm transition-all", whatsappNotif ? "left-7" : "left-1")}></div>
               </button>
@@ -8585,43 +8009,57 @@ function ConfiguracoesView({ toggleTheme, isDarkMode, navigateTo, user, userProf
         {/* Dados da Conta */}
         <section>
           <SectionHeader title="Dados da Conta" />
-          <Card className="space-y-6">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-              <div className="relative group cursor-pointer shrink-0">
-                <Avatar 
-                  src={userProfile?.avatar_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&auto=format"} 
-                  alt={userProfile?.full_name || "Perfil"} 
-                  size="xl" 
-                  className="w-24 h-24" 
-                  fallback={userProfile?.full_name?.charAt(0) || "U"}
-                />
-                <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <Camera className="w-6 h-6 text-white" />
+          <form onSubmit={handleSaveAccount}>
+            <Card className="space-y-6">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                <div className="relative group cursor-pointer shrink-0">
+                  <Avatar 
+                    src={userProfile?.avatar_url} 
+                    alt={userProfile?.full_name || "Perfil"} 
+                    size="xl" 
+                    className="w-24 h-24" 
+                    fallback={userProfile?.full_name?.charAt(0) || "U"}
+                  />
+                  <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Camera className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+                <div className="flex-1 w-full space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5 ml-1">Nome de Exibição</label>
+                    <input 
+                      type="text" 
+                      value={cfgFullName} 
+                      onChange={e => setCfgFullName(e.target.value)}
+                      required
+                      className="w-full h-12 bg-secondary/50 border border-border rounded-xl px-4 text-sm font-bold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" 
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="flex-1 w-full space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5 ml-1">Nome de Exibição</label>
-                  <input type="text" defaultValue={userProfile?.full_name || "Ana Oliveira"} key={userProfile?.full_name} className="w-full h-12 bg-secondary/50 border border-border rounded-xl px-4 text-sm font-bold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" />
+                  <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5 ml-1">E-mail</label>
+                  <input type="email" value={user?.email || ""} disabled className="w-full h-12 bg-secondary/30 border border-border rounded-xl px-4 text-sm font-bold text-muted-foreground cursor-not-allowed" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5 ml-1">Telefone / WhatsApp</label>
+                  <input 
+                    type="tel" 
+                    value={cfgPhone} 
+                    onChange={e => setCfgPhone(e.target.value)}
+                    placeholder="(11) 98888-7777"
+                    className="w-full h-12 bg-secondary/50 border border-border rounded-xl px-4 text-sm font-bold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" 
+                  />
                 </div>
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5 ml-1">E-mail</label>
-                <input type="email" defaultValue={user?.email || "ana@email.com"} key={user?.email} disabled className="w-full h-12 bg-secondary/30 border border-border rounded-xl px-4 text-sm font-bold text-muted-foreground cursor-not-allowed" />
+              <div className="flex justify-end pt-4">
+                <Button type="submit" disabled={savingAccount} className="cursor-pointer font-bold">
+                  {savingAccount ? 'Salvando...' : 'Salvar Alterações'}
+                </Button>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5 ml-1">Telefone / WhatsApp</label>
-                <input type="tel" defaultValue={userProfile?.phone || "(11) 98888-7777"} key={userProfile?.phone} className="w-full h-12 bg-secondary/50 border border-border rounded-xl px-4 text-sm font-bold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" />
-              </div>
-            </div>
-            
-            <div className="flex justify-end pt-4">
-              <Button>Salvar Alterações</Button>
-            </div>
-          </Card>
+            </Card>
+          </form>
         </section>
 
         <div className="pt-6 border-t border-border flex justify-center">
