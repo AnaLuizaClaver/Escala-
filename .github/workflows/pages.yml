@@ -34,6 +34,7 @@ jobs:
           VITE_SUPABASE_URL: https://cnekrocvcciuitiordcc.supabase.co
           # Publishable key intended for browser builds. Access is enforced by RLS.
           VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ChAiqdNLtcSJstbhQoplYg_xCC9hxCk
+          VITE_GOOGLE_AUTH_ENABLED: 'true'
           PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
         run: npm run build -- --base "${PAGES_BASE_PATH%/}/"
       - name: Name the Pages artifact
