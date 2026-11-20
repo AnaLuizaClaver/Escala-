@@ -3,8 +3,6 @@ packages:
 allowBuilds:
   '@tailwindcss/oxide': true
   esbuild: false
-  protobufjs: false
-  re2: false
 supportedArchitectures:
   os:
     - current

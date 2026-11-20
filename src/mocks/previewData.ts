@@ -1,17 +1,19 @@
-﻿// Dados de demonstração. Alterações vivem somente na memória desta página.
+// Exemplos iniciais. Dados da interface React persistem neste navegador.
+import { createLocalData } from '../shared/state/localData.ts';
+import { usePreviewDataRevision } from '../shared/state/dataRevision.ts';
 export type PreviewRow = Record<string, any>;
 const now = new Date();
 const future = new Date(now.getTime() + 7 * 86400000).toISOString().slice(0, 10);
 export const previewUser = { id: 'ana', email: 'ana@example.com', user_metadata: { full_name: 'Ana Silva' } };
 const created_at = now.toISOString();
-const items: Record<string, PreviewRow[]> = {
+const seed: Record<string, PreviewRow[]> = {
   profiles: [
     { id: 'ana', full_name: 'Ana Silva', email: previewUser.email, phone: '(11) 99999-0000', role: 'admin', birth_date: '1995-10-20', avatar_url: '', availability: { Dom: ['Manhã', 'Noite'], Seg: [], Ter: ['Noite'], Qua: ['Noite'], Qui: [], Sex: [], Sáb: ['Tarde'] }, created_at },
     { id: 'pedro', full_name: 'Pedro Santos', birth_date: '1992-10-15', avatar_url: '', role: 'volunteer', created_at },
   ],
   ministries: [
-    { id: 'louvor', name: 'Louvor', description: 'Servindo através da música', icon: '🎵', color: '#C6FF4D', auto_schedule_enabled: false, created_at },
-    { id: 'midia', name: 'Mídia', description: 'Comunicação e transmissão', icon: '📷', color: '#60a5fa', auto_schedule_enabled: false, created_at },
+    { id: 'louvor', name: 'Louvor', description: 'Servindo através da música', icon: '🎵', color: '#C6FF4D', active: true, auto_schedule_enabled: false, created_at },
+    { id: 'midia', name: 'Mídia', description: 'Comunicação e transmissão', icon: '📷', color: '#60a5fa', active: true, auto_schedule_enabled: false, created_at },
   ],
   ministry_roles: [{ id: 'vocal', ministry_id: 'louvor', name: 'Vocal', max_volunteers: 2 }, { id: 'camera', ministry_id: 'midia', name: 'Câmera', max_volunteers: 1 }],
   ministry_members: [{ id: 'ana-louvor', user_id: 'ana', ministry_id: 'louvor', role: 'leader', status: 'approved', created_at }, { id: 'pedro-louvor', user_id: 'pedro', ministry_id: 'louvor', role: 'volunteer', status: 'approved', created_at }, { id: 'ana-midia', user_id: 'ana', ministry_id: 'midia', role: 'leader', status: 'approved', created_at }],
@@ -24,6 +26,12 @@ const items: Record<string, PreviewRow[]> = {
   feed_comments: [], feed_likes: [],
   volunteer_of_month: [{ id: 'destaque', volunteer_id: 'pedro', ministry_id: 'louvor', month: now.getMonth() + 1, year: now.getFullYear(), reason: 'Dedicação e alegria ao servir', created_at }],
 };
+let browserStorage: Storage | undefined;
+try { if (typeof window !== 'undefined') browserStorage = window.localStorage; } catch { /* Mostra aviso sem sobrescrever dados. */ }
+const localData = createLocalData(browserStorage, seed);
+const items = localData.tables as Record<string, PreviewRow[]>;
+export const localDataProblem = () => localData.problem;
+export const exportLocalData = () => localData.backup();
 function expand(collection: string, row: PreviewRow, depth = 0): PreviewRow {
   if (depth > 3) return { ...row };
   const result = { ...row };
@@ -37,7 +45,8 @@ function expand(collection: string, row: PreviewRow, depth = 0): PreviewRow {
   one('songs', 'songs', row.song_id);
   if (collection === 'schedules') { many('schedule_members', 'schedule_id'); many('schedule_songs', 'schedule_id'); }
   if (collection === 'feed_posts') { many('feed_comments', 'post_id'); many('feed_likes', 'post_id'); }
-  if (collection === 'ministries') { many('ministry_members', 'ministry_id'); many('ministry_roles', 'ministry_id'); }
+  if (collection === 'ministries') { many('ministry_members', 'ministry_id'); many('ministry_roles', 'ministry_id'); many('schedules', 'ministry_id'); }
+  if (collection === 'profiles') many('ministry_members', 'user_id');
   if (collection === 'schedule_swap_requests') {
     one('schedule_members', 'schedule_members', row.schedule_member_id);
     one('requester', 'ministry_members', row.requester_id);
@@ -48,14 +57,44 @@ function expand(collection: string, row: PreviewRow, depth = 0): PreviewRow {
 export function getField(row: PreviewRow, path: string): any {
   return path.replace(/\(/g, '.').replace(/\)/g, '').split('.').reduce((value, key) => value?.[key], row);
 }
+const childRelations: Record<string, Array<[string, string]>> = {
+  ministries: [['ministry_roles', 'ministry_id'], ['ministry_members', 'ministry_id'], ['schedules', 'ministry_id'], ['feed_posts', 'ministry_id'], ['volunteer_of_month', 'ministry_id']],
+  profiles: [['ministry_members', 'user_id'], ['feed_posts', 'author_id'], ['volunteer_of_month', 'volunteer_id']],
+  ministry_members: [['schedule_members', 'ministry_member_id'], ['schedule_swap_requests', 'requester_id'], ['schedule_swap_requests', 'target_member_id']],
+  schedules: [['schedule_members', 'schedule_id'], ['schedule_songs', 'schedule_id']],
+  schedule_members: [['schedule_swap_requests', 'schedule_member_id']],
+  songs: [['schedule_songs', 'song_id']],
+  feed_posts: [['feed_comments', 'post_id'], ['feed_likes', 'post_id']],
+};
+function removeRelated(collection: string, id: string) {
+  for (const [childCollection, foreignKey] of childRelations[collection] || []) {
+    const children = items[childCollection]?.filter(row => row[foreignKey] === id) || [];
+    for (const child of children) removeRelated(childCollection, child.id);
+    items[childCollection] = (items[childCollection] || []).filter(row => row[foreignKey] !== id);
+  }
+}
 export function previewData(collection: string, action = 'read', payload?: any, matches: (row: PreviewRow) => boolean = () => true, options: { single?: boolean; limit?: number; order?: any } = {}): { data: any; error: any; count: number } {
+  const before = action === 'read' ? null : structuredClone(items);
   const list = items[collection] ||= [];
   let selected = list.filter(row => matches(expand(collection, row)));
   if (action === 'insert') {
-    selected = (Array.isArray(payload) ? payload : [payload]).map(row => ({ id: crypto.randomUUID(), created_at: new Date().toISOString(), ...row }));
+    selected = (Array.isArray(payload) ? payload : [payload]).map(row => ({ id: crypto.randomUUID(), created_at: new Date().toISOString(), ...(collection === 'ministries' ? { active: true } : {}), ...row }));
     list.push(...selected);
   } else if (action === 'update') selected.forEach(row => Object.assign(row, payload));
-  else if (action === 'delete') items[collection] = list.filter(row => !selected.includes(row));
+  else if (action === 'delete') {
+    for (const row of selected) removeRelated(collection, row.id);
+    items[collection] = list.filter(row => !selected.includes(row));
+  }
+  if ((action === 'update' || action === 'delete') && selected.length === 0) return { data: options.single ? null : [], error: new Error('Registro não encontrado.'), count: 0 };
+  if (before && typeof window !== 'undefined') {
+    const error = localData.commit(items);
+    if (error) {
+      for (const key of Object.keys(items)) delete items[key];
+      Object.assign(items, before);
+      usePreviewDataRevision.getState().changed();
+      return { data: options.single ? null : [], error, count: 0 };
+    }
+  }
   let data = selected.map(row => expand(collection, row));
   if (options.order) {
     const [key, config] = options.order;
@@ -63,5 +102,6 @@ export function previewData(collection: string, action = 'read', payload?: any, 
   }
   const count = data.length;
   if (options.limit !== undefined) data = data.slice(0, options.limit);
+  if (action !== 'read' && count > 0) usePreviewDataRevision.getState().changed();
   return { data: options.single ? data[0] || null : data, error: null, count };
 }

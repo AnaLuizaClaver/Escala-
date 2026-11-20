@@ -1,11 +1,16 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { usePreview } from '../hooks/usePreview'
 import { toast } from 'sonner'
 import { Mail, Lock, Eye, EyeOff, LogIn, KeyRound, Sparkles, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
+import { useNavigate } from 'react-router'
 
-export default function LoginView({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
+export default function LoginView({ onSwitchToRegister, signIn }: {
+  onSwitchToRegister: () => void
+  signIn?: (email: string, password: string) => Promise<string | null>
+}) {
   const { enterApp } = usePreview()
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -17,8 +22,19 @@ export default function LoginView({ onSwitchToRegister }: { onSwitchToRegister: 
   const [forgotEmail, setForgotEmail] = useState('')
   const [forgotLoading, setForgotLoading] = useState(false)
   const [forgotSuccess, setForgotSuccess] = useState(false)
+  const forgotInputRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (!showForgotModal) return
+    const previous = document.activeElement as HTMLElement | null
+    forgotInputRef.current?.focus()
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowForgotModal(false)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => { document.removeEventListener('keydown', onKeyDown); previous?.focus() }
+  }, [showForgotModal])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
 
@@ -36,7 +52,18 @@ export default function LoginView({ onSwitchToRegister }: { onSwitchToRegister: 
     }
 
     setLoading(true)
+    if (signIn) {
+      try {
+        setError(await signIn(trimmedEmail, password))
+      } catch {
+        setError('Não foi possível conectar. Tente novamente.')
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
     enterApp()
+    navigate('/inicio')
     setLoading(false)
     toast.success('Demonstração aberta. Bem-vindo(a).')
   }
@@ -77,11 +104,11 @@ export default function LoginView({ onSwitchToRegister }: { onSwitchToRegister: 
 
       {/* Main Login Card */}
       <div className="bg-card border border-border rounded-3xl p-6 sm:p-8 shadow-sm relative overflow-hidden">
-        <button type="button" onClick={() => enterApp()} className="text-sm font-bold text-primary mb-4">Explorar sem autenticação</button>
+        {!signIn && <button type="button" onClick={() => { enterApp(); navigate('/inicio') }} className="text-sm font-bold text-primary mb-4">Explorar sem autenticação</button>}
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Email Field */}
           <div>
-            <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5 ml-1">
+            <label htmlFor="login-email" className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5 ml-1">
               E-mail
             </label>
             <div className="relative">
@@ -89,6 +116,7 @@ export default function LoginView({ onSwitchToRegister }: { onSwitchToRegister: 
                 <Mail className="w-4 h-4" />
               </div>
               <input
+                id="login-email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 type="email"
@@ -103,10 +131,10 @@ export default function LoginView({ onSwitchToRegister }: { onSwitchToRegister: 
           {/* Password Field */}
           <div>
             <div className="flex items-center justify-between mb-1.5 ml-1 mr-1">
-              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest">
+              <label htmlFor="login-password" className="block text-xs font-bold text-muted-foreground uppercase tracking-widest">
                 Senha
               </label>
-              <button
+              {!signIn && <button
                 type="button"
                 onClick={() => {
                   setForgotEmail(email)
@@ -116,13 +144,14 @@ export default function LoginView({ onSwitchToRegister }: { onSwitchToRegister: 
                 className="text-xs font-bold text-primary hover:underline"
               >
                 Esqueci minha senha
-              </button>
+              </button>}
             </div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted-foreground">
                 <Lock className="w-4 h-4" />
               </div>
               <input
+                id="login-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 type={showPassword ? 'text' : 'password'}
@@ -133,6 +162,7 @@ export default function LoginView({ onSwitchToRegister }: { onSwitchToRegister: 
               />
               <button
                 type="button"
+                aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute inset-y-0 right-0 pr-4 flex items-center text-muted-foreground hover:text-foreground transition-colors"
                 tabIndex={-1}
@@ -207,7 +237,7 @@ export default function LoginView({ onSwitchToRegister }: { onSwitchToRegister: 
         {showForgotModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="absolute inset-0" onClick={() => setShowForgotModal(false)} />
-            <motion.div
+            <motion.div role="dialog" aria-modal="true" aria-label="Recuperar senha"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
@@ -238,10 +268,12 @@ export default function LoginView({ onSwitchToRegister }: { onSwitchToRegister: 
               ) : (
                 <form onSubmit={handleForgotPassword} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5 ml-1">
+                    <label htmlFor="forgot-email" className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5 ml-1">
                       E-mail cadastrado
                     </label>
                     <input
+                      id="forgot-email"
+                      ref={forgotInputRef}
                       value={forgotEmail}
                       onChange={(e) => setForgotEmail(e.target.value)}
                       type="email"
