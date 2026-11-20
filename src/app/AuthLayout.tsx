@@ -12,10 +12,8 @@ export default function AuthLayout({ children, controls, fullWidth = false }: {
           className="absolute inset-0 -z-20 h-full w-full object-cover object-[center_42%]" />
         <div className="absolute inset-0 -z-10 bg-[#bdf348]/30 mix-blend-screen" />
         <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[#10230c]/95 via-[#10230c]/25 to-[#10230c]/65" />
-        <div className="relative z-10 flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-primary-foreground text-primary flex items-center justify-center font-extrabold text-2xl shadow-sm rotate-3">E</div>
-          <span className="font-extrabold text-3xl tracking-tight">Escalaê</span>
-        </div>
+        <img src={`${import.meta.env.BASE_URL}escalae-logo.png`} alt="Escalaê"
+          className="relative z-10 h-auto w-44 max-w-full self-start lg:w-64" />
         <div className="relative z-10 mt-6 max-w-md">
           <p className="text-lg font-bold tracking-tight lg:text-6xl lg:leading-[1.03]">
             Organize.<span className="lg:block"> Conecte.</span><span className="text-[#cbfa76] lg:block"> Sirva.</span>
