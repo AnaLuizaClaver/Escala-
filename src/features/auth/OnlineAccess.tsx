@@ -17,7 +17,7 @@ export default function OnlineAccess({ client }: { client: SupabaseClient }) {
   }, [client]);
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <main className="mx-auto min-h-screen max-w-2xl space-y-6 p-6 sm:p-12">
         <p className="text-2xl font-extrabold">Escalaê</p>
         {session === undefined ? <p role="status">Verificando sessão…</p>
@@ -48,7 +48,10 @@ function Register({ client, onBack }: { client: SupabaseClient; onBack: () => vo
       const { data, error } = await client.auth.signUp({
         email: String(fields.get('email')).trim(),
         password: String(fields.get('password')),
-        options: { data: { full_name: String(fields.get('name')).trim() }, emailRedirectTo: window.location.origin },
+        options: {
+          data: { full_name: String(fields.get('name')).trim() },
+          emailRedirectTo: new URL(import.meta.env.BASE_URL, window.location.origin).href,
+        },
       });
       if (error) {
         setMessage(error.code === 'over_email_send_rate_limit'
