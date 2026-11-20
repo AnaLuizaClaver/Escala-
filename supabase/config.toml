@@ -1,0 +1,4 @@
+project_id = "escalae"
+
+[functions.username-login]
+verify_jwt = false
