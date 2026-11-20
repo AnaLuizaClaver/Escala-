@@ -144,7 +144,7 @@ export default function AuthScreen({ client }: { client: SupabaseClient }) {
     });
   }
 
-  return <AuthLayout>
+  return <AuthLayout fullWidth>
     <section className="access-card" aria-label="Acesso ao Escalaê">
       <Tabs value={tab} onValueChange={changeTab}>
         <TabsList aria-label="Escolha como acessar" className="access-tabs">
@@ -175,7 +175,7 @@ export default function AuthScreen({ client }: { client: SupabaseClient }) {
             : <form className="access-form" onSubmit={register}>
               <label className="access-photo">
                 <span className="access-photo-icon">{preview ? <img src={preview} alt="Prévia da foto escolhida" /> : <Camera size={21} />}</span>
-                <span><strong>{preview ? 'Trocar foto' : 'Adicionar foto'}</strong><small>Opcional · JPG, PNG ou WebP · até 1,5 MB</small></span>
+                <span><strong>{preview ? 'Trocar foto de perfil' : 'Adicionar foto de perfil'}</strong><small>Opcional · JPG, PNG ou WebP · até 1,5 MB</small></span>
                 <input type="file" name="avatar" accept={avatarTypes} disabled={busy} onChange={event => void choosePhoto(event.target.files?.[0])} />
               </label>
               <label className="access-field">Nome completo<input name="full_name" autoComplete="name" maxLength={100} placeholder="Como podemos chamar você?" required /></label>

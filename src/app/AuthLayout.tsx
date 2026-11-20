@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 
-export default function AuthLayout({ children, controls }: {
+export default function AuthLayout({ children, controls, fullWidth = false }: {
   children: ReactNode;
   controls?: ReactNode;
+  fullWidth?: boolean;
 }) {
   return (
     <div className="min-h-screen w-full bg-background text-foreground font-sans lg:grid lg:grid-cols-[45%_55%]">
@@ -24,7 +25,9 @@ export default function AuthLayout({ children, controls }: {
       </aside>
       <main className="relative flex flex-col">
         {controls && <div className="absolute top-6 right-6 z-10">{controls}</div>}
-        <div className="flex flex-1 items-center justify-center p-6 sm:p-12 lg:min-h-dvh">
+        <div className={fullWidth
+          ? 'flex flex-1 p-5 sm:p-8 lg:min-h-dvh lg:px-12 lg:py-10'
+          : 'flex flex-1 items-center justify-center p-6 sm:p-12 lg:min-h-dvh'}>
           {children}
         </div>
       </main>
