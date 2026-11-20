@@ -1,11 +1,12 @@
-﻿// Dados de demonstração. Alterações vivem somente na memória desta página.
+// Exemplos iniciais. Dados da interface React persistem neste navegador.
+import { createLocalData } from '../shared/state/localData.ts';
 import { usePreviewDataRevision } from '../shared/state/dataRevision.ts';
 export type PreviewRow = Record<string, any>;
 const now = new Date();
 const future = new Date(now.getTime() + 7 * 86400000).toISOString().slice(0, 10);
 export const previewUser = { id: 'ana', email: 'ana@example.com', user_metadata: { full_name: 'Ana Silva' } };
 const created_at = now.toISOString();
-const items: Record<string, PreviewRow[]> = {
+const seed: Record<string, PreviewRow[]> = {
   profiles: [
     { id: 'ana', full_name: 'Ana Silva', email: previewUser.email, phone: '(11) 99999-0000', role: 'admin', birth_date: '1995-10-20', avatar_url: '', availability: { Dom: ['Manhã', 'Noite'], Seg: [], Ter: ['Noite'], Qua: ['Noite'], Qui: [], Sex: [], Sáb: ['Tarde'] }, created_at },
     { id: 'pedro', full_name: 'Pedro Santos', birth_date: '1992-10-15', avatar_url: '', role: 'volunteer', created_at },
@@ -25,6 +26,12 @@ const items: Record<string, PreviewRow[]> = {
   feed_comments: [], feed_likes: [],
   volunteer_of_month: [{ id: 'destaque', volunteer_id: 'pedro', ministry_id: 'louvor', month: now.getMonth() + 1, year: now.getFullYear(), reason: 'Dedicação e alegria ao servir', created_at }],
 };
+let browserStorage: Storage | undefined;
+try { if (typeof window !== 'undefined') browserStorage = window.localStorage; } catch { /* Mostra aviso sem sobrescrever dados. */ }
+const localData = createLocalData(browserStorage, seed);
+const items = localData.tables as Record<string, PreviewRow[]>;
+export const localDataProblem = () => localData.problem;
+export const exportLocalData = () => localData.backup();
 function expand(collection: string, row: PreviewRow, depth = 0): PreviewRow {
   if (depth > 3) return { ...row };
   const result = { ...row };
@@ -67,6 +74,7 @@ function removeRelated(collection: string, id: string) {
   }
 }
 export function previewData(collection: string, action = 'read', payload?: any, matches: (row: PreviewRow) => boolean = () => true, options: { single?: boolean; limit?: number; order?: any } = {}): { data: any; error: any; count: number } {
+  const before = action === 'read' ? null : structuredClone(items);
   const list = items[collection] ||= [];
   let selected = list.filter(row => matches(expand(collection, row)));
   if (action === 'insert') {
@@ -78,6 +86,15 @@ export function previewData(collection: string, action = 'read', payload?: any, 
     items[collection] = list.filter(row => !selected.includes(row));
   }
   if ((action === 'update' || action === 'delete') && selected.length === 0) return { data: options.single ? null : [], error: new Error('Registro não encontrado.'), count: 0 };
+  if (before && typeof window !== 'undefined') {
+    const error = localData.commit(items);
+    if (error) {
+      for (const key of Object.keys(items)) delete items[key];
+      Object.assign(items, before);
+      usePreviewDataRevision.getState().changed();
+      return { data: options.single ? null : [], error, count: 0 };
+    }
+  }
   let data = selected.map(row => expand(collection, row));
   if (options.order) {
     const [key, config] = options.order;

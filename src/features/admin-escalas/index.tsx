@@ -1,27 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { previewData, getField } from '../../mocks/previewData';
-import { usePreview } from '../../hooks/usePreview';
-import { 
-  Home, Calendar, Music, MessageSquare, User, Bell, Moon, Sun,
-  Flame, CheckCircle2, AlertCircle, Clock, MapPin, Trophy, Gift,
-  ArrowRightLeft, Users, Award, Settings, ChevronRight, ChevronLeft,
-  Filter, Check, MoreVertical, X, PlayCircle, Mic2, Youtube, AlignLeft,
-  FileText, Search, Camera, MonitorPlay, HeartHandshake, Mic, LogOut,
-  LayoutDashboard, ListChecks, PieChart, ShieldCheck, AlertTriangle,
-  Plus, Trash2, Edit2, LayoutTemplate, Copy, Eye, EyeOff, PlusCircle, Repeat,
-  ChevronUp, ChevronDown, ListMusic, TrendingUp, XCircle, Activity,
-  Mail, Lock, Phone, RefreshCw, Sparkles, Layers, Video
+import {
+Calendar,
+Check,
+ChevronLeft,
+Clock,
+Eye,
+Plus,
+Repeat,
+ShieldCheck,
+Trash2,
+Users
 } from 'lucide-react';
-import { 
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, 
-  LineChart, Line, PieChart as RechartsPieChart, Pie, Cell, CartesianGrid
-} from 'recharts';
-import { Toaster, toast } from 'sonner';
-import { motion, AnimatePresence } from 'motion/react';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { useEffect,useState } from 'react';
+import { toast } from 'sonner';
+import { getField,previewData } from '../../mocks/previewData';
 
-import { cn, Button, Badge, Card, Avatar, Modal, formatDatePtBR, formatFullDatePtBR, formatTimePtBR, SidebarItem, BottomNavItem, SectionHeader, ProximoCultoCard, EscalaAbertaCard, VoluntarioMesCard, AniversariosCard, AvisoCard, getMinistryIconComponent } from '../../shared/ui';
+import { Avatar,Badge,Button,Card,Modal,SectionHeader,cn,formatDatePtBR,formatTimePtBR } from '../../shared/ui';
 
 export function AdminEscalasView({ navigateTo }: any) {
   const [schedules, setSchedules] = useState<any[]>([]);
@@ -37,12 +30,12 @@ export function AdminEscalasView({ navigateTo }: any) {
     setLoading(true);
     try {
       // 1. Carregar Ministérios
-      const { data: minList } = previewData('ministries', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['name', {}] });
+      const { data: minList } = previewData('ministries', 'read', undefined, () => true, { single: false, limit: undefined, order: ['name', {}] });
 
       setMinistries(minList || []);
 
       // 2. Carregar Escalas
-      const { data: schedulesData, error } = previewData('schedules', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['date', { ascending: false }] });
+      const { data: schedulesData, error } = previewData('schedules', 'read', undefined, () => true, { single: false, limit: undefined, order: ['date', { ascending: false }] });
 
       if (error) throw error;
       setSchedules(schedulesData || []);
@@ -317,13 +310,13 @@ export function AdminEscalaCreateView({ navigateTo }: any) {
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        const { data: minList } = previewData('ministries', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['name', {}] });
+        const { data: minList } = previewData('ministries', 'read', undefined, () => true, { single: false, limit: undefined, order: ['name', {}] });
         setMinistries(minList || []);
         if (minList && minList.length > 0) {
           setSelectedMinistryId(minList[0].id);
         }
 
-        const { data: songsData } = previewData('songs', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['title', {}] });
+        const { data: songsData } = previewData('songs', 'read', undefined, () => true, { single: false, limit: undefined, order: ['title', {}] });
         setAllSongs(songsData || []);
       } catch (err) {
         console.error('Erro ao carregar dados iniciais:', err);
@@ -428,7 +421,7 @@ export function AdminEscalaCreateView({ navigateTo }: any) {
           end_time: endTime || null,
           location: location.trim() || 'Templo Principal',
           status: asDraft ? 'draft' : 'published'
-        }, (row: any) => true, { single: true, limit: undefined, order: undefined });
+        }, () => true, { single: true, limit: undefined, order: undefined });
 
       if (sError) throw sError;
 
@@ -441,7 +434,7 @@ export function AdminEscalaCreateView({ navigateTo }: any) {
           response: 'pending'
         }));
 
-        const { error: smError } = previewData('schedule_members', 'insert', memberRows, (row: any) => true, { single: false, limit: undefined, order: undefined });
+        const { error: smError } = previewData('schedule_members', 'insert', memberRows, () => true, { single: false, limit: undefined, order: undefined });
 
         if (smError) throw smError;
       }
@@ -454,7 +447,7 @@ export function AdminEscalaCreateView({ navigateTo }: any) {
           position: idx + 1
         }));
 
-        const { error: songsError } = previewData('schedule_songs', 'insert', songRows, (row: any) => true, { single: false, limit: undefined, order: undefined });
+        const { error: songsError } = previewData('schedule_songs', 'insert', songRows, () => true, { single: false, limit: undefined, order: undefined });
 
         if (songsError) throw songsError;
       }

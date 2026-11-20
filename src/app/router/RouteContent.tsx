@@ -1,25 +1,30 @@
 import React from 'react';
 import { useOutletContext } from 'react-router';
-import { HomeView } from '../../features/dashboard';
-import { EscalasView, DetalhesView, TrocaModal } from '../../features/escalas';
-import { RepertorioView, SongDetailsModal } from '../../features/repertorio';
-import { FeedView, FeedPost } from '../../features/feed';
-import { NotificacoesView, NotificationCard } from '../../features/notificacoes';
-import { PerfilView, ConfiguracoesView } from '../../features/perfil';
-import { ConquistasView } from '../../features/conquistas';
-import { RegisterView, SelectMinistryView, PendingApprovalView } from '../../features/auth';
-import { MeusMinisteriosView, AdminMinisteriosView, AdminMinisterioDetalhesView } from '../../features/ministerios';
-import { AdminDashboardView } from '../../features/admin-dashboard';
-import { AdminEscalasView, AdminEscalaCreateView, EditChoiceModal } from '../../features/admin-escalas';
-import { AdminVoluntariosView, AdminVoluntarioPerfilView } from '../../features/voluntarios';
-import { AdminSolicitacoesView } from '../../features/solicitacoes';
-import { AdminRepertorioView } from '../../features/admin-repertorio';
-import { AdminFeedView } from '../../features/admin-feed';
-import { AdminRelatoriosView } from '../../features/relatorios';
+const HomeView = React.lazy(() => import('../../features/dashboard').then(m => ({ default: m.HomeView })));
+const EscalasView = React.lazy(() => import('../../features/escalas').then(m => ({ default: m.EscalasView })));
+const DetalhesView = React.lazy(() => import('../../features/escalas').then(m => ({ default: m.DetalhesView })));
+const RepertorioView = React.lazy(() => import('../../features/repertorio').then(m => ({ default: m.RepertorioView })));
+const FeedView = React.lazy(() => import('../../features/feed').then(m => ({ default: m.FeedView })));
+const NotificacoesView = React.lazy(() => import('../../features/notificacoes').then(m => ({ default: m.NotificacoesView })));
+const PerfilView = React.lazy(() => import('../../features/perfil').then(m => ({ default: m.PerfilView })));
+const ConfiguracoesView = React.lazy(() => import('../../features/perfil').then(m => ({ default: m.ConfiguracoesView })));
+const ConquistasView = React.lazy(() => import('../../features/conquistas').then(m => ({ default: m.ConquistasView })));
+const MeusMinisteriosView = React.lazy(() => import('../../features/ministerios').then(m => ({ default: m.MeusMinisteriosView })));
+const AdminMinisteriosView = React.lazy(() => import('../../features/ministerios').then(m => ({ default: m.AdminMinisteriosView })));
+const AdminMinisterioDetalhesView = React.lazy(() => import('../../features/ministerios').then(m => ({ default: m.AdminMinisterioDetalhesView })));
+const AdminDashboardView = React.lazy(() => import('../../features/admin-dashboard').then(m => ({ default: m.AdminDashboardView })));
+const AdminEscalasView = React.lazy(() => import('../../features/admin-escalas').then(m => ({ default: m.AdminEscalasView })));
+const AdminEscalaCreateView = React.lazy(() => import('../../features/admin-escalas').then(m => ({ default: m.AdminEscalaCreateView })));
+const AdminVoluntariosView = React.lazy(() => import('../../features/voluntarios').then(m => ({ default: m.AdminVoluntariosView })));
+const AdminVoluntarioPerfilView = React.lazy(() => import('../../features/voluntarios').then(m => ({ default: m.AdminVoluntarioPerfilView })));
+const AdminSolicitacoesView = React.lazy(() => import('../../features/solicitacoes').then(m => ({ default: m.AdminSolicitacoesView })));
+const AdminRepertorioView = React.lazy(() => import('../../features/admin-repertorio').then(m => ({ default: m.AdminRepertorioView })));
+const AdminFeedView = React.lazy(() => import('../../features/admin-feed').then(m => ({ default: m.AdminFeedView })));
+const AdminRelatoriosView = React.lazy(() => import('../../features/relatorios').then(m => ({ default: m.AdminRelatoriosView })));
 
 export default function RouteContent() {
   const { currentView, navigateTo, setTrocaModalOpen, toggleTheme, isDarkMode, user, userProfile, userMemberships, unreadNotificationsCount, selectedEscala, setSelectedTrocaSlot, setSelectedSongModal, refreshUserData, showLogin } = useOutletContext<any>();
-  return (<>
+  return (<React.Suspense fallback={<div className="p-8 text-sm font-bold text-muted-foreground">Carregando...</div>}>
           {currentView === 'home' && (
             <HomeView 
               navigateTo={navigateTo} 
@@ -124,5 +129,5 @@ export default function RouteContent() {
               showLogin={showLogin}
             />
           )}
-  </>);
+  </React.Suspense>);
 }

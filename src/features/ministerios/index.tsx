@@ -1,27 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { previewData, getField } from '../../mocks/previewData';
-import { usePreview } from '../../hooks/usePreview';
-import { 
-  Home, Calendar, Music, MessageSquare, User, Bell, Moon, Sun,
-  Flame, CheckCircle2, AlertCircle, Clock, MapPin, Trophy, Gift,
-  ArrowRightLeft, Users, Award, Settings, ChevronRight, ChevronLeft,
-  Filter, Check, MoreVertical, X, PlayCircle, Mic2, Youtube, AlignLeft,
-  FileText, Search, Camera, MonitorPlay, HeartHandshake, Mic, LogOut,
-  LayoutDashboard, ListChecks, PieChart, ShieldCheck, AlertTriangle,
-  Plus, Trash2, Edit2, LayoutTemplate, Copy, Eye, EyeOff, PlusCircle, Repeat,
-  ChevronUp, ChevronDown, ListMusic, TrendingUp, XCircle, Activity,
-  Mail, Lock, Phone, RefreshCw, Sparkles, Layers, Video
+import {
+Calendar,
+ChevronLeft,
+Edit2,
+Layers,
+Plus,
+ShieldCheck,
+Trash2,
+Users
 } from 'lucide-react';
-import { 
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, 
-  LineChart, Line, PieChart as RechartsPieChart, Pie, Cell, CartesianGrid
-} from 'recharts';
-import { Toaster, toast } from 'sonner';
-import { motion, AnimatePresence } from 'motion/react';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import React,{ useEffect,useState } from 'react';
+import { toast } from 'sonner';
+import { getField,previewData } from '../../mocks/previewData';
 
-import { cn, Button, Badge, Card, Avatar, Modal, formatDatePtBR, formatFullDatePtBR, formatTimePtBR, SidebarItem, BottomNavItem, SectionHeader, ProximoCultoCard, EscalaAbertaCard, VoluntarioMesCard, AniversariosCard, AvisoCard, getMinistryIconComponent } from '../../shared/ui';
+import { Avatar,Badge,Button,Card,Modal,SectionHeader,cn,formatDatePtBR,formatTimePtBR,getMinistryIconComponent } from '../../shared/ui';
 
 export function MeusMinisteriosView({ user, userMemberships = [], onRefreshMemberships }: any) {
   const [modalOpen, setModalOpen] = useState(false);
@@ -40,7 +31,7 @@ export function MeusMinisteriosView({ user, userMemberships = [], onRefreshMembe
     setModalOpen(true);
     setLoading(true);
     try {
-      const { data } = previewData('ministries', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['name', {}] });
+      const { data } = previewData('ministries', 'read', undefined, () => true, { single: false, limit: undefined, order: ['name', {}] });
       setAllMinistries(data || []);
       const available = (data || []).filter((min: any) => !existingMinistryIds.includes(min.id));
       if (available.length > 0) {
@@ -67,7 +58,7 @@ export function MeusMinisteriosView({ user, userMemberships = [], onRefreshMembe
           ministry_id: selectedMinistryId,
           role: 'volunteer',
           status: 'pending'
-        }, (row: any) => true, { single: false, limit: undefined, order: undefined });
+        }, () => true, { single: false, limit: undefined, order: undefined });
 
       if (error) {
         toast.error('Erro ao solicitar entrada: ' + error.message);
@@ -253,7 +244,7 @@ export function AdminMinisteriosView({ navigateTo }: any) {
     const todayStr = new Date().toISOString().split('T')[0];
 
     try {
-      const { data, error } = previewData('ministries', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['name', {}] });
+      const { data, error } = previewData('ministries', 'read', undefined, () => true, { single: false, limit: undefined, order: ['name', {}] });
 
       if (error) throw error;
 
@@ -294,7 +285,7 @@ export function AdminMinisteriosView({ navigateTo }: any) {
           description: description.trim() || null,
           icon: icon.trim() || 'Users',
           color: color.trim() || '#C6FF4D'
-        }, (row: any) => true, { single: false, limit: undefined, order: undefined });
+        }, () => true, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
 
@@ -512,7 +503,7 @@ export function AdminMinisterioDetalhesView({ ministry, navigateTo }: any) {
       const { error } = previewData('ministry_roles', 'insert', {
           ministry_id: ministry.id,
           name: newRoleName.trim()
-        }, (row: any) => true, { single: false, limit: undefined, order: undefined });
+        }, () => true, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
 
@@ -582,8 +573,6 @@ export function AdminMinisterioDetalhesView({ ministry, navigateTo }: any) {
 
       toast.success('Ministério atualizado com sucesso!');
       setIsEditModalOpen(false);
-      ministry.name = name.trim();
-      ministry.description = description.trim();
     } catch (err: any) {
       toast.error('Erro ao atualizar ministério: ' + err.message);
     } finally {

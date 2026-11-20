@@ -1,27 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { previewData, getField } from '../../mocks/previewData';
-import { usePreview } from '../../hooks/usePreview';
-import { 
-  Home, Calendar, Music, MessageSquare, User, Bell, Moon, Sun,
-  Flame, CheckCircle2, AlertCircle, Clock, MapPin, Trophy, Gift,
-  ArrowRightLeft, Users, Award, Settings, ChevronRight, ChevronLeft,
-  Filter, Check, MoreVertical, X, PlayCircle, Mic2, Youtube, AlignLeft,
-  FileText, Search, Camera, MonitorPlay, HeartHandshake, Mic, LogOut,
-  LayoutDashboard, ListChecks, PieChart, ShieldCheck, AlertTriangle,
-  Plus, Trash2, Edit2, LayoutTemplate, Copy, Eye, EyeOff, PlusCircle, Repeat,
-  ChevronUp, ChevronDown, ListMusic, TrendingUp, XCircle, Activity,
-  Mail, Lock, Phone, RefreshCw, Sparkles, Layers, Video
+import {
+Bell,
+ChevronRight,
+Moon,Sun
 } from 'lucide-react';
-import { 
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, 
-  LineChart, Line, PieChart as RechartsPieChart, Pie, Cell, CartesianGrid
-} from 'recharts';
-import { Toaster, toast } from 'sonner';
-import { motion, AnimatePresence } from 'motion/react';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { useEffect,useState } from 'react';
+import { toast } from 'sonner';
+import { getField,previewData } from '../../mocks/previewData';
 
-import { cn, Button, Badge, Card, Avatar, Modal, formatDatePtBR, formatFullDatePtBR, formatTimePtBR, SidebarItem, BottomNavItem, SectionHeader, ProximoCultoCard, EscalaAbertaCard, VoluntarioMesCard, AniversariosCard, AvisoCard, getMinistryIconComponent } from '../../shared/ui';
+import { AniversariosCard,Button,Card,EscalaAbertaCard,ProximoCultoCard,SectionHeader,VoluntarioMesCard } from '../../shared/ui';
 
 export function HomeView({ toggleTheme, isDarkMode, navigateTo, onTrocaClick, unreadCount, user, userProfile, userMemberships }: any) {
   const hour = new Date().getHours()

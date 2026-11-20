@@ -1,10 +1,35 @@
 ﻿# Escalaê
 
-Aplicação frontend em React, TypeScript e Vite. As telas usam dados de demonstração em `src/mocks/`, mantidos somente em memória. Recarregar a página descarta as alterações. Não é necessário configurar variáveis de ambiente ou serviços externos.
+Aplicativo React, TypeScript e Vite. Na interface React, os dados ficam salvos neste navegador e permanecem ao recarregar. Use o botão de backup antes de limpar os dados do navegador. O perfil inicial é de exemplo; não há login real nem sincronização entre dispositivos. Nenhum serviço pago é necessário.
 
 ## Executar
 
 Requer Node.js 24 ou superior.
+
+Com a URL e a chave publicável do Supabase em `.env.local`, o app abre a
+área de teste online com login, cadastro, ministérios e pedidos de entrada.
+Sem essa configuração, abre a demonstração local descrita abaixo.
+
+Para testar dois perfis, cadastre e confirme primeiro o e-mail principal.
+No SQL Editor do Supabase, como administrador do banco, execute esta
+instrução com o e-mail principal confirmado:
+
+```sql
+update public.profiles as profile
+set role = 'admin'
+from auth.users as account
+where profile.id = account.id
+  and account.email_confirmed_at is not null
+  and lower(account.email) = lower('SEU_EMAIL_PRINCIPAL')
+returning profile.id, profile.role;
+```
+
+Depois, entre com o segundo e-mail e peça entrada em um ministério. Em
+outro perfil de navegador, entre com a conta principal e aprove o pedido.
+Volte à conta de voluntário e clique em **Atualizar** para conferir o status.
+
+O arquivo `supabase/schema.sql` é o esquema inicial. A pasta
+`supabase/migrations/` contém as alterações posteriores aplicadas ao projeto.
 
 ```sh
 npm install
@@ -42,3 +67,7 @@ A interface não valida credenciais, cria contas reais, envia e-mails, aplica pe
 Veja `docs/FRONTEND-LOCAL.md` para orientações sobre as interfaces e os dados locais.
 
 Design de origem: [Figma](https://www.figma.com/design/ndHKbtj0cpkcONd9xX7GGN/Escala%C3%AA).
+
+## Armazenamento local da interface React
+
+`src/shared/state/localData.ts` grava e exporta os dados locais. Falhas de gravação desfazem a alteração e exibem um aviso. Dados ilegíveis são preservados. A cópia exportada usa JSON; a interface React ainda não oferece importação. As interfaces alternativas continuam independentes.

@@ -1,50 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import { previewData, getField } from '../mocks/previewData';
+import {
+Award,
+Bell,
+Calendar,
+Home,
+LayoutDashboard,ListChecks,
+LogOut,
+MessageSquare,
+Moon,
+Music,
+PieChart,
+Settings,
+ShieldCheck,
+Sun,
+User,
+Users
+} from 'lucide-react';
+import { AnimatePresence } from 'motion/react';
+import React,{ useEffect,useState } from 'react';
+import { BrowserRouter,Navigate,Outlet,Route,Routes,useLocation,useNavigate } from 'react-router';
+import { Toaster,toast } from 'sonner';
 import { PreviewProvider } from '../context/PreviewContext';
 import { usePreview } from '../hooks/usePreview';
-import LoginView from './LoginView';
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router';
-import RouteContent from './router/RouteContent';
-import AdminOutlet from './router/AdminOutlet';
-import { isPublicPath, pathForView, viewForPath } from './router/routes';
+import { getField,previewData } from '../mocks/previewData';
 import { usePreviewDataRevision } from '../shared/state/dataRevision';
-import { 
-  Home, Calendar, Music, MessageSquare, User, Bell, Moon, Sun,
-  Flame, CheckCircle2, AlertCircle, Clock, MapPin, Trophy, Gift,
-  ArrowRightLeft, Users, Award, Settings, ChevronRight, ChevronLeft,
-  Filter, Check, MoreVertical, X, PlayCircle, Mic2, Youtube, AlignLeft,
-  FileText, Search, Camera, MonitorPlay, HeartHandshake, Mic, LogOut,
-  LayoutDashboard, ListChecks, PieChart, ShieldCheck, AlertTriangle,
-  Plus, Trash2, Edit2, LayoutTemplate, Copy, Eye, EyeOff, PlusCircle, Repeat,
-  ChevronUp, ChevronDown, ListMusic, TrendingUp, XCircle, Activity,
-  Mail, Lock, Phone, RefreshCw, Sparkles, Layers, Video
-} from 'lucide-react';
-import { 
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, 
-  LineChart, Line, PieChart as RechartsPieChart, Pie, Cell, CartesianGrid
-} from 'recharts';
-import { Toaster, toast } from 'sonner';
-import { motion, AnimatePresence } from 'motion/react';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import LoginView from './LoginView';
+import { supabase } from '../lib/supabase';
+import { LocalDataNotice } from '../shared/ui/LocalDataNotice';
+import AdminOutlet from './router/AdminOutlet';
+import RouteContent from './router/RouteContent';
+import { isPublicPath,pathForView,viewForPath } from './router/routes';
 
-import { cn, Button, Badge, Card, Avatar, Modal, formatDatePtBR, formatFullDatePtBR, formatTimePtBR, SidebarItem, BottomNavItem, SectionHeader, ProximoCultoCard, EscalaAbertaCard, VoluntarioMesCard, AniversariosCard, AvisoCard, getMinistryIconComponent } from '../shared/ui';
-import { HomeView } from '../features/dashboard';
-import { EscalasView, DetalhesView, TrocaModal } from '../features/escalas';
-import { RepertorioView, SongDetailsModal } from '../features/repertorio';
-import { FeedView, FeedPost } from '../features/feed';
-import { NotificacoesView, NotificationCard } from '../features/notificacoes';
-import { PerfilView, ConfiguracoesView } from '../features/perfil';
-import { ConquistasView } from '../features/conquistas';
-import { RegisterView, SelectMinistryView, PendingApprovalView } from '../features/auth';
-import { MeusMinisteriosView, AdminMinisteriosView, AdminMinisterioDetalhesView } from '../features/ministerios';
-import { AdminDashboardView } from '../features/admin-dashboard';
-import { AdminEscalasView, AdminEscalaCreateView, EditChoiceModal } from '../features/admin-escalas';
-import { AdminVoluntariosView, AdminVoluntarioPerfilView } from '../features/voluntarios';
-import { AdminSolicitacoesView } from '../features/solicitacoes';
-import { AdminRepertorioView } from '../features/admin-repertorio';
-import { AdminFeedView } from '../features/admin-feed';
-import { AdminRelatoriosView } from '../features/relatorios';
+import { PendingApprovalView,RegisterView,SelectMinistryView } from '../features/auth';
+import { Avatar,BottomNavItem,Button,SidebarItem,cn } from '../shared/ui';
+const TrocaModal = React.lazy(() => import('../features/escalas').then(m => ({ default: m.TrocaModal })));
+const SongDetailsModal = React.lazy(() => import('../features/repertorio').then(m => ({ default: m.SongDetailsModal })));
+const OnlineAccess = React.lazy(() => import('../features/auth/OnlineAccess'));
 
 class ErrorBoundary extends React.Component<any, { hasError: boolean; error?: any }> {
   constructor(props: any) {
@@ -70,8 +60,16 @@ class ErrorBoundary extends React.Component<any, { hasError: boolean; error?: an
 }
 
 export default function App() {
+  if (supabase) {
+    return (
+      <React.Suspense fallback={<p role="status" className="p-6">Carregando acesso…</p>}>
+        <OnlineAccess client={supabase} />
+      </React.Suspense>
+    );
+  }
+
   return (
-    <BrowserRouter><PreviewProvider><Routes><Route path="/" element={<AppInner />}><Route index element={<Navigate to="/inicio" replace />} /><Route path="inicio" element={<RouteContent />} /><Route path="escalas" element={<RouteContent />} /><Route path="escalas/nova" element={<RouteContent />} /><Route path="escalas/:id" element={<RouteContent />} /><Route path="repertorio" element={<RouteContent />} /><Route path="feed" element={<RouteContent />} /><Route path="ministerios" element={<RouteContent />} /><Route path="conquistas" element={<RouteContent />} /><Route path="notificacoes" element={<RouteContent />} /><Route path="perfil" element={<RouteContent />} /><Route path="configuracoes" element={<RouteContent />} /><Route path="admin" element={<AdminOutlet />}><Route index element={<RouteContent />} /><Route path="ministerios" element={<RouteContent />} /><Route path="ministerios/:id" element={<RouteContent />} /><Route path="escalas" element={<RouteContent />} /><Route path="escalas/nova" element={<RouteContent />} /><Route path="voluntarios" element={<RouteContent />} /><Route path="voluntarios/:id" element={<RouteContent />} /><Route path="solicitacoes" element={<RouteContent />} /><Route path="repertorio" element={<RouteContent />} /><Route path="feed" element={<RouteContent />} /><Route path="relatorios" element={<RouteContent />} /></Route><Route path="login" element={<RouteContent />} /><Route path="cadastro" element={<RouteContent />} /><Route path="recuperar-senha" element={<RouteContent />} /><Route path="escolher-ministerio" element={<RouteContent />} /><Route path="aguardando-aprovacao" element={<RouteContent />} /><Route path="*" element={<Navigate to="/inicio" replace />} /></Route></Routes></PreviewProvider></BrowserRouter>
+    <BrowserRouter><LocalDataNotice /><PreviewProvider><Routes><Route path="/" element={<AppInner />}><Route index element={<Navigate to="/inicio" replace />} /><Route path="inicio" element={<RouteContent />} /><Route path="escalas" element={<RouteContent />} /><Route path="escalas/nova" element={<RouteContent />} /><Route path="escalas/:id" element={<RouteContent />} /><Route path="repertorio" element={<RouteContent />} /><Route path="feed" element={<RouteContent />} /><Route path="ministerios" element={<RouteContent />} /><Route path="conquistas" element={<RouteContent />} /><Route path="notificacoes" element={<RouteContent />} /><Route path="perfil" element={<RouteContent />} /><Route path="configuracoes" element={<RouteContent />} /><Route path="admin" element={<AdminOutlet />}><Route index element={<RouteContent />} /><Route path="ministerios" element={<RouteContent />} /><Route path="ministerios/:id" element={<RouteContent />} /><Route path="escalas" element={<RouteContent />} /><Route path="escalas/nova" element={<RouteContent />} /><Route path="voluntarios" element={<RouteContent />} /><Route path="voluntarios/:id" element={<RouteContent />} /><Route path="solicitacoes" element={<RouteContent />} /><Route path="repertorio" element={<RouteContent />} /><Route path="feed" element={<RouteContent />} /><Route path="relatorios" element={<RouteContent />} /></Route><Route path="login" element={<RouteContent />} /><Route path="cadastro" element={<RouteContent />} /><Route path="recuperar-senha" element={<RouteContent />} /><Route path="escolher-ministerio" element={<RouteContent />} /><Route path="aguardando-aprovacao" element={<RouteContent />} /><Route path="*" element={<Navigate to="/inicio" replace />} /></Route></Routes></PreviewProvider></BrowserRouter>
   )
 }
 
@@ -85,7 +83,7 @@ function AppInner() {
   const isAdminMode = location.pathname.startsWith('/admin');
   const routeId = decodeURIComponent(location.pathname.split('/').slice(-1)[0] || '');
   const detailCollection = currentView === 'admin_ministerio_detalhes' ? 'ministries' : currentView === 'admin_voluntario_perfil' ? 'profiles' : 'schedules';
-  const selectedEscala = location.state?.selected || (['detalhes', 'admin_ministerio_detalhes', 'admin_voluntario_perfil'].includes(currentView) ? previewData(detailCollection, 'read', undefined, row => row.id === routeId, { single: true }).data : null);
+  const selectedEscala = (['detalhes', 'admin_ministerio_detalhes', 'admin_voluntario_perfil'].includes(currentView) ? previewData(detailCollection, 'read', undefined, row => row.id === routeId, { single: true }).data : null) || location.state?.selected;
 
   // Modals state
   const [trocaModalOpen, setTrocaModalOpen] = useState(false);
@@ -457,7 +455,7 @@ function AppInner() {
       </nav>
 
       {/* Global Modals */}
-      <AnimatePresence>
+      <React.Suspense fallback={null}><AnimatePresence>
         {trocaModalOpen && (
           <TrocaModal 
             isOpen={trocaModalOpen} 
@@ -467,7 +465,7 @@ function AppInner() {
           />
         )}
         {selectedSongModal && <SongDetailsModal song={selectedSongModal} onClose={() => setSelectedSongModal(null)} />}
-      </AnimatePresence>
+      </AnimatePresence></React.Suspense>
 
       <Toaster position="bottom-right" theme={isDarkMode ? 'dark' : 'light'} className="font-sans" toastOptions={{
         className: 'border-border bg-card text-foreground font-bold rounded-2xl shadow-xl'

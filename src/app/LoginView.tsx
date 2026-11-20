@@ -5,7 +5,10 @@ import { Mail, Lock, Eye, EyeOff, LogIn, KeyRound, Sparkles, ArrowRight, AlertCi
 import { motion, AnimatePresence } from 'motion/react'
 import { useNavigate } from 'react-router'
 
-export default function LoginView({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
+export default function LoginView({ onSwitchToRegister, signIn }: {
+  onSwitchToRegister: () => void
+  signIn?: (email: string, password: string) => Promise<string | null>
+}) {
   const { enterApp } = usePreview()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
@@ -31,7 +34,7 @@ export default function LoginView({ onSwitchToRegister }: { onSwitchToRegister: 
     return () => { document.removeEventListener('keydown', onKeyDown); previous?.focus() }
   }, [showForgotModal])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
 
@@ -49,6 +52,16 @@ export default function LoginView({ onSwitchToRegister }: { onSwitchToRegister: 
     }
 
     setLoading(true)
+    if (signIn) {
+      try {
+        setError(await signIn(trimmedEmail, password))
+      } catch {
+        setError('Não foi possível conectar. Tente novamente.')
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
     enterApp()
     navigate('/inicio')
     setLoading(false)
@@ -91,7 +104,7 @@ export default function LoginView({ onSwitchToRegister }: { onSwitchToRegister: 
 
       {/* Main Login Card */}
       <div className="bg-card border border-border rounded-3xl p-6 sm:p-8 shadow-sm relative overflow-hidden">
-        <button type="button" onClick={() => { enterApp(); navigate('/inicio') }} className="text-sm font-bold text-primary mb-4">Explorar sem autenticação</button>
+        {!signIn && <button type="button" onClick={() => { enterApp(); navigate('/inicio') }} className="text-sm font-bold text-primary mb-4">Explorar sem autenticação</button>}
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Email Field */}
           <div>
@@ -121,7 +134,7 @@ export default function LoginView({ onSwitchToRegister }: { onSwitchToRegister: 
               <label htmlFor="login-password" className="block text-xs font-bold text-muted-foreground uppercase tracking-widest">
                 Senha
               </label>
-              <button
+              {!signIn && <button
                 type="button"
                 onClick={() => {
                   setForgotEmail(email)
@@ -131,7 +144,7 @@ export default function LoginView({ onSwitchToRegister }: { onSwitchToRegister: 
                 className="text-xs font-bold text-primary hover:underline"
               >
                 Esqueci minha senha
-              </button>
+              </button>}
             </div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted-foreground">

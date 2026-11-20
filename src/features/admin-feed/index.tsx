@@ -1,27 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { previewData, getField } from '../../mocks/previewData';
-import { usePreview } from '../../hooks/usePreview';
-import { 
-  Home, Calendar, Music, MessageSquare, User, Bell, Moon, Sun,
-  Flame, CheckCircle2, AlertCircle, Clock, MapPin, Trophy, Gift,
-  ArrowRightLeft, Users, Award, Settings, ChevronRight, ChevronLeft,
-  Filter, Check, MoreVertical, X, PlayCircle, Mic2, Youtube, AlignLeft,
-  FileText, Search, Camera, MonitorPlay, HeartHandshake, Mic, LogOut,
-  LayoutDashboard, ListChecks, PieChart, ShieldCheck, AlertTriangle,
-  Plus, Trash2, Edit2, LayoutTemplate, Copy, Eye, EyeOff, PlusCircle, Repeat,
-  ChevronUp, ChevronDown, ListMusic, TrendingUp, XCircle, Activity,
-  Mail, Lock, Phone, RefreshCw, Sparkles, Layers, Video
+import {
+MessageSquare,
+Plus,
+ShieldCheck,
+Trash2,
+Trophy
 } from 'lucide-react';
-import { 
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, 
-  LineChart, Line, PieChart as RechartsPieChart, Pie, Cell, CartesianGrid
-} from 'recharts';
-import { Toaster, toast } from 'sonner';
-import { motion, AnimatePresence } from 'motion/react';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import React,{ useEffect,useState } from 'react';
+import { toast } from 'sonner';
+import { getField,previewData } from '../../mocks/previewData';
 
-import { cn, Button, Badge, Card, Avatar, Modal, formatDatePtBR, formatFullDatePtBR, formatTimePtBR, SidebarItem, BottomNavItem, SectionHeader, ProximoCultoCard, EscalaAbertaCard, VoluntarioMesCard, AniversariosCard, AvisoCard, getMinistryIconComponent } from '../../shared/ui';
+import { Button,Card,Modal,cn,formatDatePtBR } from '../../shared/ui';
 import { FeedPost } from '../feed';
 
 export function AdminFeedView({ user, userProfile, navigateTo }: any) {
@@ -51,16 +39,16 @@ export function AdminFeedView({ user, userProfile, navigateTo }: any) {
   const loadFeedAndMetadata = async () => {
     setLoading(true);
     try {
-      const { data: minList } = previewData('ministries', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['name', {}] });
+      const { data: minList } = previewData('ministries', 'read', undefined, () => true, { single: false, limit: undefined, order: ['name', {}] });
       setMinistries(minList || []);
 
-      const { data: volList } = previewData('profiles', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['full_name', {}] });
+      const { data: volList } = previewData('profiles', 'read', undefined, () => true, { single: false, limit: undefined, order: ['full_name', {}] });
       setVolunteers(volList || []);
       if (volList && volList.length > 0) {
         setHonorVolunteerId(volList[0].id);
       }
 
-      const { data: postsData, error } = previewData('feed_posts', 'read', undefined, (row: any) => true, { single: false, limit: undefined, order: ['created_at', { ascending: false }] });
+      const { data: postsData, error } = previewData('feed_posts', 'read', undefined, () => true, { single: false, limit: undefined, order: ['created_at', { ascending: false }] });
 
       if (error) throw error;
       setPosts(postsData || []);
@@ -91,7 +79,7 @@ export function AdminFeedView({ user, userProfile, navigateTo }: any) {
           type: postType,
           title: postTitle.trim(),
           content: postContent.trim()
-        }, (row: any) => true, { single: false, limit: undefined, order: undefined });
+        }, () => true, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
 
@@ -141,7 +129,7 @@ export function AdminFeedView({ user, userProfile, navigateTo }: any) {
           month: now.getMonth() + 1,
           year: now.getFullYear(),
           reason: (honorTitle + ' - ' + honorMessage).trim()
-        }, (row: any) => true, { single: false, limit: undefined, order: undefined });
+        }, () => true, { single: false, limit: undefined, order: undefined });
 
       // 2. Criar post no feed comemorando
       previewData('feed_posts', 'insert', {
@@ -150,7 +138,7 @@ export function AdminFeedView({ user, userProfile, navigateTo }: any) {
           type: '🎉 Aniversário',
           title: `🏆 Voluntário em Destaque: ${selectedVol?.full_name || 'Voluntário'}!`,
           content: `${honorTitle}\n\n${honorMessage || 'Parabéns pela dedicação e excelente serviço prestado à igreja!'}`
-        }, (row: any) => true, { single: false, limit: undefined, order: undefined });
+        }, () => true, { single: false, limit: undefined, order: undefined });
 
       toast.success('Homenagem publicada no mural!');
       setHonorTitle('Destaque do Mês');
