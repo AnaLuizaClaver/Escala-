@@ -6,7 +6,7 @@ export default function AuthLayout({ children, controls, fullWidth = false }: {
   fullWidth?: boolean;
 }) {
   return (
-    <div className="min-h-screen w-full bg-background text-foreground font-sans lg:grid lg:grid-cols-[minmax(0,65%)_minmax(0,35%)]">
+    <div className="min-h-screen w-full bg-background text-foreground font-sans lg:grid lg:grid-cols-[minmax(0,70%)_minmax(0,30%)]">
       <aside className="relative isolate flex min-h-36 flex-col justify-between overflow-hidden bg-primary p-6 text-white lg:sticky lg:top-0 lg:h-dvh lg:p-12">
         <img src={`${import.meta.env.BASE_URL}equipe-servindo.png`} alt="" fetchPriority="high"
           className="absolute inset-0 -z-20 h-full w-full object-cover object-[center_42%]" />
