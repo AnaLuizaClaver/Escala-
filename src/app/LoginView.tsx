@@ -5,9 +5,11 @@ import { Mail, Lock, Eye, EyeOff, LogIn, KeyRound, Sparkles, ArrowRight, AlertCi
 import { motion, AnimatePresence } from 'motion/react'
 import { useNavigate } from 'react-router'
 
-export default function LoginView({ onSwitchToRegister, signIn }: {
+export default function LoginView({ onSwitchToRegister, signIn, signInWithGoogle, resendConfirmation }: {
   onSwitchToRegister: () => void
   signIn?: (email: string, password: string) => Promise<string | null>
+  signInWithGoogle?: () => Promise<string | null>
+  resendConfirmation?: (email: string) => Promise<string | null>
 }) {
   const { enterApp } = usePreview()
   const navigate = useNavigate()
@@ -16,6 +18,23 @@ export default function LoginView({ onSwitchToRegister, signIn }: {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [alternativeBusy, setAlternativeBusy] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
+
+  async function runAlternative(action: () => Promise<string | null>, success?: string) {
+    setError(null)
+    setNotice(null)
+    setAlternativeBusy(true)
+    try {
+      const failure = await action()
+      if (failure) setError(failure)
+      else if (success) setNotice(success)
+    } catch {
+      setError('Não foi possível conectar. Tente novamente.')
+    } finally {
+      setAlternativeBusy(false)
+    }
+  }
 
   // Forgot password modal state
   const [showForgotModal, setShowForgotModal] = useState(false)
@@ -37,6 +56,7 @@ export default function LoginView({ onSwitchToRegister, signIn }: {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setNotice(null)
 
     const trimmedEmail = email.trim()
     if (!trimmedEmail) {
@@ -207,6 +227,22 @@ export default function LoginView({ onSwitchToRegister, signIn }: {
             )}
           </motion.button>
         </form>
+
+        {signInWithGoogle && (
+          <button type="button" disabled={loading || alternativeBusy}
+            onClick={() => void runAlternative(signInWithGoogle)}
+            className="mt-4 w-full rounded-full border border-border py-3 text-sm font-bold disabled:opacity-50">
+            Entrar com Google
+          </button>
+        )}
+        {resendConfirmation && (
+          <button type="button" disabled={!email.trim() || loading || alternativeBusy}
+            onClick={() => void runAlternative(() => resendConfirmation(email.trim()), 'Se houver uma confirmação pendente, confira sua caixa de entrada.')}
+            className="mt-3 w-full text-sm font-bold text-primary disabled:opacity-50">
+            Reenviar confirmação para o e-mail informado
+          </button>
+        )}
+        {notice && <p role="status" className="mt-3 text-sm">{notice}</p>}
 
         {/* Separator */}
         <div className="relative my-6">

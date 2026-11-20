@@ -24,6 +24,7 @@ import { usePreview } from '../hooks/usePreview';
 import { getField,previewData } from '../mocks/previewData';
 import { usePreviewDataRevision } from '../shared/state/dataRevision';
 import LoginView from './LoginView';
+import AuthLayout from './AuthLayout';
 import { supabase } from '../lib/supabase';
 import { LocalDataNotice } from '../shared/ui/LocalDataNotice';
 import AdminOutlet from './router/AdminOutlet';
@@ -211,50 +212,32 @@ function AppInner() {
 
   if (!showApp || isPublicPath(location.pathname)) {
     return (
-      <div className="flex min-h-screen w-full bg-background text-foreground font-sans overflow-hidden transition-colors duration-300">
-        <div className="hidden lg:flex w-[45%] bg-primary flex-col justify-between p-12 relative overflow-hidden text-primary-foreground border-r border-border">
-          <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(0,0,0,0.05)_25%,transparent_25%,transparent_50%,rgba(0,0,0,0.05)_50%,rgba(0,0,0,0.05)_75%,transparent_75%,transparent)] bg-[length:32px_32px]"></div>
-          <div className="relative z-10 flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-primary-foreground text-primary flex items-center justify-center font-extrabold text-2xl shadow-sm rotate-3">E</div>
-            <span className="font-extrabold text-3xl tracking-tight">Escalaê</span>
-          </div>
-          <div className="relative z-10 max-w-md">
-            <h1 className="text-5xl font-extrabold tracking-tight mb-6 leading-tight">Organize.<br/>Conecte.<br/>Sirva.</h1>
-            <p className="font-semibold text-primary-foreground/80 text-lg">A plataforma feita para simplificar e gamificar o voluntariado na sua igreja local.</p>
-          </div>
-        </div>
-
-        <div className="flex-1 flex flex-col relative overflow-y-auto custom-scrollbar">
-          <div className="absolute top-6 right-6 z-10">
-            <Button variant="ghost" size="icon" onClick={toggleTheme}>
-              {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </Button>
-          </div>
-
-          <div className="flex-1 flex items-center justify-center p-6 sm:p-12 mt-12 sm:mt-0">
-            {authMode === 'register' ? (
-              <RegisterView
-                onNext={() => setAuthMode('login')}
-                onRegistered={() => setAuthMode('select_ministry')}
-              />
-            ) : authMode === 'select_ministry' ? (
-              <SelectMinistryView
-                onNext={(selectedNames: string[]) => {
-                  setPendingApprovalMinistries(selectedNames)
-                  setAuthMode('pending_approval')
-                }}
-              />
-            ) : authMode === 'pending_approval' ? (
-              <PendingApprovalView
-                ministries={pendingApprovalMinistries}
-                onSignOut={showLogin}
-              />
-            ) : (
-              <LoginView onSwitchToRegister={() => setAuthMode('register')} />
-            )}
-          </div>
-        </div>
-      </div>
+      <AuthLayout controls={
+        <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Alternar tema">
+          {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        </Button>
+      }>
+      {authMode === 'register' ? (
+        <RegisterView
+          onNext={() => setAuthMode('login')}
+          onRegistered={() => setAuthMode('select_ministry')}
+        />
+      ) : authMode === 'select_ministry' ? (
+        <SelectMinistryView
+          onNext={(selectedNames: string[]) => {
+            setPendingApprovalMinistries(selectedNames)
+            setAuthMode('pending_approval')
+          }}
+        />
+      ) : authMode === 'pending_approval' ? (
+        <PendingApprovalView
+          ministries={pendingApprovalMinistries}
+          onSignOut={showLogin}
+        />
+      ) : (
+        <LoginView onSwitchToRegister={() => setAuthMode('register')} />
+      )}
+      </AuthLayout>
     )
   }
 

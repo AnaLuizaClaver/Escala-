@@ -2,7 +2,12 @@ import { useEffect, useState, type FormEvent } from 'react';
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { BrowserRouter } from 'react-router';
 import LoginView from '../../app/LoginView';
+import AuthLayout from '../../app/AuthLayout';
 import { Button } from '../../app/components/ui/button';
+
+function authReturnUrl() {
+  return new URL(import.meta.env.BASE_URL, window.location.origin).href;
+}
 
 export default function OnlineAccess({ client }: { client: SupabaseClient }) {
   const [session, setSession] = useState<Session | null>();
@@ -18,18 +23,34 @@ export default function OnlineAccess({ client }: { client: SupabaseClient }) {
 
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
-      <main className="mx-auto min-h-screen max-w-2xl space-y-6 p-6 sm:p-12">
+      {session ? <main className="mx-auto min-h-screen max-w-2xl space-y-6 p-6 sm:p-12">
         <p className="text-2xl font-extrabold">Escalaê</p>
+        <MinistryAccess key={session.user.id} client={client} userId={session.user.id} />
+      </main> : <AuthLayout>
         {session === undefined ? <p role="status">Verificando sessão…</p>
-          : session ? <MinistryAccess key={session.user.id} client={client} userId={session.user.id} />
           : register ? <Register client={client} onBack={() => setRegister(false)} />
-          : <LoginView onSwitchToRegister={() => setRegister(true)} signIn={async (email, password) => {
+          : <LoginView onSwitchToRegister={() => setRegister(true)} signInWithGoogle={import.meta.env.VITE_GOOGLE_AUTH_ENABLED === 'true' ? async () => {
+            const { error } = await client.auth.signInWithOAuth({
+              provider: 'google',
+              options: { redirectTo: authReturnUrl() },
+            });
+            return error ? 'Não foi possível iniciar o login com Google.' : null;
+          } : undefined} resendConfirmation={async email => {
+            const { error } = await client.auth.resend({
+              type: 'signup',
+              email,
+              options: { emailRedirectTo: authReturnUrl() },
+            });
+            if (error?.code === 'email_address_invalid') return 'O serviço de e-mail recusou este endereço. Confira o endereço ou use outro método de acesso.';
+            if (error?.code === 'over_email_send_rate_limit') return 'Aguarde antes de pedir um novo e-mail.';
+            return error ? 'Não foi possível reenviar a confirmação agora.' : null;
+          }} signIn={async (email, password) => {
             const { error } = await client.auth.signInWithPassword({ email, password });
             if (error?.code === 'email_not_confirmed') return 'Confirme seu e-mail antes de entrar.';
             if (error?.code === 'invalid_credentials') return 'E-mail ou senha inválidos.';
             return error ? 'Não foi possível entrar agora. Tente novamente.' : null;
           }} />}
-      </main>
+      </AuthLayout>}
     </BrowserRouter>
   );
 }
@@ -50,7 +71,7 @@ function Register({ client, onBack }: { client: SupabaseClient; onBack: () => vo
         password: String(fields.get('password')),
         options: {
           data: { full_name: String(fields.get('name')).trim() },
-          emailRedirectTo: new URL(import.meta.env.BASE_URL, window.location.origin).href,
+          emailRedirectTo: authReturnUrl(),
         },
       });
       if (error) {
