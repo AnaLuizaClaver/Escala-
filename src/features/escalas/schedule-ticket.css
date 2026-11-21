@@ -1,0 +1,115 @@
+.schedule-page {
+  width: min(100%, 46rem);
+  margin-inline: auto;
+  padding: 1rem 1rem 2rem;
+}
+
+.schedule-banner {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  overflow: hidden;
+  min-height: 8.5rem;
+  padding: 1rem 1.25rem;
+  border: 2px solid var(--brand-night);
+  border-radius: 1.5rem;
+  background: var(--brand-blue);
+  color: white;
+}
+
+.schedule-banner::before {
+  position: absolute;
+  z-index: -1;
+  inset: -5rem -2rem auto auto;
+  width: 15rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--brand-purple);
+  content: '';
+}
+
+.schedule-banner h1 { font-size: clamp(1.65rem, 6vw, 2.5rem); font-weight: 800; line-height: 1.12; }
+.schedule-banner img { width: clamp(4.5rem, 24%, 8rem); height: auto; }
+.schedule-banner p, .schedule-ticket-time, .schedule-ticket-ministry {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  border: 1px solid var(--brand-night);
+  border-radius: 999px;
+  font-weight: 800;
+}
+.schedule-banner p { margin-top: .7rem; padding: .3rem .65rem; background: var(--brand-lime); color: var(--brand-night); font-size: .75rem; }
+.schedule-tabs { display: grid; grid-template-columns: repeat(3, 1fr); margin-block: .65rem 1rem; border-bottom: 1px solid var(--border); }
+.schedule-tabs button, .schedule-scope button { min-height: 2.75rem; color: var(--muted-foreground); font-size: .875rem; font-weight: 700; }
+.schedule-tabs button { border-bottom: 3px solid transparent; }
+.schedule-tabs button[aria-pressed=true] { border-bottom-color: var(--primary); color: var(--primary); }
+.schedule-scope { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .75rem; }
+.schedule-scope button { padding-inline: .7rem; }
+.schedule-scope button[aria-pressed=true] { border-radius: .75rem; background: var(--accent); color: var(--accent-foreground); }
+.schedule-empty { padding: 1.5rem; border: 1px solid var(--border); border-radius: 1rem; background: var(--card); text-align: center; }
+
+.schedule-ticket {
+  --ticket-tone: var(--brand-blue);
+  --ticket-ink: white;
+  --ticket-width: clamp(4.25rem, 18vw, 6rem);
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--ticket-width) minmax(0, 1fr);
+  overflow: hidden;
+  border: 2px solid var(--foreground);
+  border-radius: 1rem;
+  background: var(--card);
+  box-shadow: var(--sticker-shadow);
+}
+.schedule-ticket[data-tone=lime] { --ticket-tone: var(--brand-lime); --ticket-ink: var(--brand-night); }
+.schedule-ticket[data-tone=purple] { --ticket-tone: #B873FF; --ticket-ink: var(--brand-night); }
+.schedule-ticket::before, .schedule-ticket::after {
+  position: absolute;
+  z-index: 1;
+  left: calc(var(--ticket-width) - .45rem);
+  width: .9rem;
+  aspect-ratio: 1;
+  border: 2px solid var(--foreground);
+  border-radius: 50%;
+  background: var(--background);
+  content: '';
+  pointer-events: none;
+}
+.schedule-ticket::before { top: -.5rem; }
+.schedule-ticket::after { bottom: -.5rem; }
+.schedule-ticket-date {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: .5rem;
+  padding: .65rem .2rem;
+  border-right: 2px dashed var(--foreground);
+  background: var(--ticket-tone);
+  color: var(--ticket-ink);
+}
+.schedule-ticket-date time { display: grid; justify-items: center; font-family: var(--font-display); line-height: 1.15; }
+.schedule-ticket-date time span { font-size: .65rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.schedule-ticket-date strong { font-size: 1.95rem; font-weight: 800; }
+.schedule-ticket-time { padding: .15rem .35rem; background: var(--card); color: var(--foreground); font-size: .65rem; white-space: nowrap; }
+.schedule-ticket-main { min-width: 0; padding: .7rem .8rem; }
+.schedule-ticket-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .4rem; }
+.schedule-ticket-ministry { padding: .1rem .5rem; background: var(--ticket-tone); color: var(--ticket-ink); font-size: .66rem; }
+.schedule-ticket-stamp { padding: .1rem .3rem; border: 1px solid currentColor; border-radius: .25rem; color: var(--warning); font-size: .62rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; rotate: 4deg; }
+.schedule-ticket-stamp[data-status=confirmed] { color: var(--success); }
+.schedule-ticket-stamp[data-status=swap] { color: var(--info); }
+.schedule-ticket-stamp[data-status=declined] { color: var(--destructive); }
+.schedule-ticket h2 button { display: block; padding-block: .3rem; font: inherit; font-size: 1rem; font-weight: 800; text-align: left; }
+.schedule-ticket h2 button:hover, .schedule-ticket-link:hover { text-decoration: underline; }
+.schedule-ticket-main p { display: flex; align-items: center; gap: .3rem; margin-top: .2rem; color: var(--muted-foreground); font-size: .8rem; }
+.schedule-ticket-main p svg { flex: none; }
+.schedule-ticket-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .45rem; }
+.schedule-ticket-actions button { min-height: 2.75rem; }
+.schedule-ticket-link { color: var(--accent-foreground); font-size: .8rem; font-weight: 750; }
+
+@media (min-width: 640px) {
+  .schedule-page { padding: 1.5rem 1.5rem 3rem; }
+  .schedule-ticket-main { padding: .9rem 1rem; }
+}

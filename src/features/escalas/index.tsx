@@ -4,22 +4,28 @@ Calendar,
 Check,
 CheckCircle2,
 ChevronLeft,
+Cloud,
 Clock,MapPin,
-Music
+Music,
+Users
 } from 'lucide-react';
 import { useEffect,useState } from 'react';
+import { usePreviewDataRevision } from '../../shared/state/dataRevision';
+import './schedule-ticket.css';
 import { toast } from 'sonner';
 import { getField,previewData,saveData } from '../../mocks/previewData';
 
 import { Avatar,Badge,Button,Card,Modal,SectionHeader,cn,formatFullDatePtBR,formatTimePtBR } from '../../shared/ui';
 
-export function EscalasView({ navigateTo, user, userMemberships }: any) {
-  const [filter, setFilter] = useState('Todas');
+export function EscalasView({ navigateTo, userMemberships, userProfile, onOpenTroca }: any) {
+  const [section, setSection] = useState<'upcoming' | 'swaps' | 'history'>('upcoming');
+  const [responseFilter, setResponseFilter] = useState('all');
+  const [confirming, setConfirming] = useState<string | null>(null);
+  const revision = usePreviewDataRevision(state => state.revision);
   const [viewScope, setViewScope] = useState<'my' | 'all'>('my');
   const [escalas, setEscalas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const filters = ['Todas', 'Próximas', 'Confirmadas', 'Pendentes', 'Passadas'];
 
   const loadEscalas = async () => {
     setLoading(true);
@@ -50,6 +56,7 @@ export function EscalasView({ navigateTo, user, userMemberships }: any) {
             const userSlot = s.schedule_members?.find((sm: any) => userMemberIds.includes(sm.ministry_member_id));
             return {
               id: userSlot?.id || s.id,
+              ministry_member_id: userSlot?.ministry_member_id,
               response: userSlot?.response || 'none',
               role_id: userSlot?.role_id,
               ministry_roles: userSlot?.ministry_roles,
@@ -68,175 +75,124 @@ export function EscalasView({ navigateTo, user, userMemberships }: any) {
 
   useEffect(() => {
     void loadEscalas();
-  }, [userMemberships, viewScope]);
+  }, [userMemberships, viewScope, revision]);
 
-  const todayStr = new Date().toISOString().split('T')[0];
-  const filteredEscalas = escalas.filter((item: any) => {
-    const s = item.schedules;
-    if (!s) return false;
-    const isFuture = s.date >= todayStr;
-    const isPast = s.date < todayStr;
-    const isConfirmed = item.response === 'confirmed';
-    const isPending = item.response === 'pending';
+  const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Sao_Paulo' }).format(new Date());
+  const visibleSchedules = escalas.filter(item => item.schedules && (
+    section === 'history' ? item.schedules.date < today : item.schedules.date >= today
+  ) && (responseFilter === 'all' || item.response === responseFilter)).sort((first, second) => section === 'history'
+    ? second.schedules.date.localeCompare(first.schedules.date)
+    : first.schedules.date.localeCompare(second.schedules.date));
+  const ownMembershipIds = new Set(userMemberships?.map((member: any) => member.id));
+  const swaps = previewData('schedule_swap_requests', 'read', undefined, row => ownMembershipIds.has(row.requester_id),
+    { order: ['created_at', { ascending: false }] }).data;
+  const pending = escalas.filter(item => item.response === 'pending' && item.schedules?.date >= today).length;
+  const openSwapIds = new Set(swaps.filter((request: any) => request.status === 'pending').map((request: any) => request.schedule_member_id));
+  const tabs = [{ id: 'upcoming', label: 'Próximas' }, { id: 'swaps', label: 'Trocas' }, { id: 'history', label: 'Histórico' }] as const;
 
-    if (filter === 'Próximas') return isFuture;
-    if (filter === 'Passadas') return isPast;
-    if (filter === 'Confirmadas') return isConfirmed;
-    if (filter === 'Pendentes') return isPending;
-    return true;
-  });
+  async function confirm(id: string) {
+    setConfirming(id);
+    try {
+      const { error } = await saveData('schedule_members', 'update', { response: 'confirmed' },
+        row => row.id === id && row.response === 'pending' && ownMembershipIds.has(row.ministry_member_id));
+      if (error) throw error;
+      toast.success('Presença confirmada!');
+    } catch {
+      toast.error('Não foi possível confirmar a presença. Tente novamente.');
+    } finally {
+      setConfirming(null);
+    }
+  }
 
   return (
-    <div className="p-5 sm:p-6 lg:p-10 max-w-[1400px] mx-auto w-full animate-in fade-in duration-300">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-6">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <button
-              onClick={() => setViewScope('my')}
-              className={cn(
-                "text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full transition-all",
-                viewScope === 'my' ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Minhas Escalas
-            </button>
-            <button
-              onClick={() => setViewScope('all')}
-              className={cn(
-                "text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full transition-all",
-                viewScope === 'all' ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Todas as Escalas
-            </button>
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold">
-            {viewScope === 'my' ? 'Minhas Escalas' : 'Todas as Escalas da Igreja'}
-          </h1>
+    <div className="schedule-page">
+      <header className="schedule-banner">
+        <div className="relative z-10">
+          {userProfile?.full_name && <span className="mb-1 block text-sm font-semibold">Olá, {userProfile.full_name.split(' ')[0]}!</span>}
+          <h1>Suas escalas</h1>
+          {pending > 0 && <p><Clock size={14} aria-hidden="true" /> {pending} aguardando você</p>}
         </div>
-        
-        <div className="flex gap-2 overflow-x-auto pb-2 -mx-5 px-5 md:mx-0 md:px-0 md:pb-0 hide-scrollbar">
-          {filters.map(f => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={cn(
-                "whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-all border",
-                filter === f ? "bg-foreground text-background border-foreground" : "bg-card text-muted-foreground border-border hover:bg-secondary hover:text-foreground"
-              )}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
-      </div>
+        <Cloud className="absolute right-[27%] top-4 size-8 -rotate-6 text-white/60" aria-hidden="true" />
+        <img src={`${import.meta.env.BASE_URL}brand/pulo.png`} alt="" />
+      </header>
 
-      {loading ? (
-        <div className="py-20 flex flex-col items-center justify-center">
-          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
-          <p className="font-bold text-muted-foreground">Carregando escalas...</p>
-        </div>
-      ) : filteredEscalas.length === 0 ? (
-        <Card className="p-12 text-center border-dashed rounded-3xl bg-secondary/10">
-          <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mx-auto mb-4 text-muted-foreground">
-            <Calendar className="w-8 h-8" />
-          </div>
-          <h3 className="font-extrabold text-xl mb-2">Nenhuma escala encontrada</h3>
-          <p className="text-sm font-semibold text-muted-foreground max-w-md mx-auto">
-            {filter !== 'Todas' 
-              ? `Não há escalas correspondentes ao filtro "${filter}".` 
-              : 'Você ainda não possui escalas cadastradas para este período.'}
-          </p>
-        </Card>
-      ) : (
-        <div className="space-y-4 sm:space-y-6">
-          {filteredEscalas.map((item: any) => {
-            const s = item.schedules;
-            const userResponse = item.response;
-            const isConfirmed = userResponse === 'confirmed';
-            const isPending = userResponse === 'pending';
-            const isDeclined = userResponse === 'declined';
-            
-            const teamMembers = (s.schedule_members || []).map((sm: any) => ({
-              id: sm.id,
-              name: sm.ministry_members?.profiles?.full_name || (sm.ministry_member_id ? 'Voluntário' : 'Vaga Aberta'),
-              avatar: sm.ministry_members?.profiles?.avatar_url,
-              role: sm.ministry_roles?.name || 'Membro',
-              isOpen: !sm.ministry_member_id
-            }));
+      <nav className="schedule-tabs" aria-label="Seções de escalas">
+        {tabs.map(tab => <button key={tab.id} type="button" aria-pressed={section === tab.id} onClick={() => setSection(tab.id)}>{tab.label}</button>)}
+      </nav>
 
-            const openSlots = teamMembers.filter((m: any) => m.isOpen).length;
-            const scaleStatus = openSlots === 0 ? 'Completa' : `Incompleta (${openSlots} vagas)`;
-            const ministryName = s.ministries?.name || 'Ministério';
-            const userRoleName = item.ministry_roles?.name || (userResponse === 'none' ? 'Geral' : 'Voluntário');
-
-            const [year, month, day] = (s.date || '').split('-');
-            const monthNames = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
-            const monthAbbr = monthNames[parseInt(month, 10) - 1] || '';
-
-            return (
-              <Card 
-                key={item.id} 
-                hoverable 
-                className="p-0 overflow-hidden grid grid-cols-[4.75rem_minmax(0,1fr)] sm:grid-cols-[7rem_minmax(0,1fr)] rounded-2xl cursor-pointer border-border-strong"
-                onClick={() => navigateTo('detalhes', s)}
-              >
-                <div className={cn("flex flex-col items-center justify-center gap-2 border-r border-dashed border-brand-night/50 px-1 py-4 sm:gap-3", isConfirmed ? "bg-brand-lime text-brand-night" : isPending ? "bg-[#B873FF] text-brand-night" : "bg-brand-blue text-white")}>
-                  <div className="flex flex-col items-center">
-                    <span className="text-xs font-extrabold uppercase tracking-widest">{monthAbbr}</span>
-                    <span className="font-display text-3xl font-extrabold">{day}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm font-bold border border-current px-1.5 py-0.5 rounded-full text-xs">
-                    {formatTimePtBR(s.start_time)}
-                  </div>
-                </div>
-
-                <div className="min-w-0 p-3.5 sm:p-5 flex flex-col justify-center">
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {userResponse !== 'none' && (
-                      <Badge variant={isConfirmed ? 'success' : isPending ? 'warning' : 'destructive'}>
-                        {isConfirmed ? 'Confirmada' : isPending ? 'Pendente' : 'Recusada'}
-                      </Badge>
-                    )}
-                    <Badge variant={openSlots === 0 ? 'default' : 'warning'}>
-                      Equipe {scaleStatus}
-                    </Badge>
-                  </div>
-                  
-                  <h3 className="text-xl sm:text-2xl font-extrabold mb-1">{s.title || 'Culto de Celebração'}</h3>
-                  <p className="text-sm font-bold text-muted-foreground flex items-center gap-2 mb-6">
-                    {ministryName} <span className="w-1 h-1 rounded-full bg-border"></span> {userRoleName}
-                  </p>
-
-                  <div className="flex items-center gap-4 border-t border-border pt-5">
-                    <div className="flex -space-x-3">
-                      {teamMembers.slice(0, 4).map((member: any, i: number) => (
-                        <Avatar 
-                          key={i} 
-                          src={member.avatar} 
-                          alt={member.name} 
-                          size="md" 
-                          fallback={member.name.charAt(0)}
-                          className="border-2 border-card ring-2 ring-transparent group-hover:ring-primary/20 transition-all" 
-                        />
-                      ))}
-                    </div>
-                    <div className="text-sm">
-                      <p className="font-bold">{teamMembers.filter((m: any) => !m.isOpen).map((m: any) => m.name.split(' ')[0]).slice(0, 3).join(', ')}</p>
-                      <p className="text-xs font-semibold text-muted-foreground">Escalados neste culto</p>
-                    </div>
-                    <div className="ml-auto hidden sm:block">
-                      <Button variant="outline" size="sm" className="pointer-events-none font-bold rounded-xl">
-                        Ver detalhes
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            );
+      {section === 'swaps' ? (
+        swaps.length ? <ul className="space-y-3">
+          {swaps.map((request: any) => {
+            const event = request.schedule_members?.schedules;
+            const states: Record<string, string> = { pending: 'Aguardando', approved: 'Aprovada', rejected: 'Recusada', canceled: 'Cancelada' };
+            return <li key={request.id} className="rounded-2xl border border-border bg-card p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="font-bold">{event?.title || 'Pedido de troca'}</h2>
+                <Badge variant={request.status === 'approved' ? 'success' : request.status === 'pending' ? 'warning' : 'default'}>{states[request.status] || request.status}</Badge>
+              </div>
+              {request.reason && <p className="mt-2 text-sm text-muted-foreground">{request.reason}</p>}
+              {event && <Button variant="outline" size="sm" className="mt-3" onClick={() => navigateTo('detalhes', event)}>Ver escala</Button>}
+            </li>;
           })}
+        </ul> : <p className="schedule-empty">Você ainda não tem pedidos de troca.</p>
+      ) : <>
+        <div className="schedule-scope" aria-label="Quais escalas mostrar">
+          <button type="button" aria-pressed={viewScope === 'my'} onClick={() => setViewScope('my')}>Minhas escalas</button>
+          <button type="button" aria-pressed={viewScope === 'all'} onClick={() => setViewScope('all')}>Todas da igreja</button>
+          <select aria-label="Filtrar por situação" value={responseFilter} onChange={event => setResponseFilter(event.target.value)}
+            className="ml-auto min-h-11 rounded-xl border border-border-strong bg-card px-2 text-sm">
+            <option value="all">Todos os status</option>
+            <option value="pending">Pendentes</option>
+            <option value="confirmed">Confirmadas</option>
+            <option value="declined">Ausências</option>
+          </select>
         </div>
-      )}
+        {loading ? <p className="schedule-empty" role="status">Carregando escalas…</p> : visibleSchedules.length === 0 ? (
+          <div className="schedule-empty">
+            <img src={`${import.meta.env.BASE_URL}brand/pulo.png`} alt="" className="mx-auto mb-2 size-16" />
+            <h2 className="font-bold">Nenhuma escala por aqui</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{section === 'history' ? 'As escalas anteriores aparecem aqui.' : 'Quando houver uma escala publicada para este período, ela aparece aqui.'}</p>
+          </div>
+        ) : (
+          <ul className="grid gap-4">
+            {visibleSchedules.map(item => {
+              const schedule = item.schedules;
+              const date = new Date(`${schedule.date}T12:00:00`);
+              const [year, month, day] = schedule.date.split('-');
+              const weekday = Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
+              const monthName = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'][Number(month) - 1];
+              const ministry = schedule.ministries?.name || 'Ministério';
+              const tradePending = openSwapIds.has(item.id);
+              const stamp = tradePending ? 'Troca pedida' : { pending: 'Aguardando', confirmed: 'Confirmado', declined: 'Ausência' }[item.response as 'pending' | 'confirmed' | 'declined'];
+              const tone = /louvor/i.test(ministry) ? 'purple' : /recep/i.test(ministry) ? 'lime' : 'blue';
+              const canRespond = section === 'upcoming' && item.response === 'pending' && !tradePending;
+              return (
+                <li key={item.id} className="schedule-ticket" data-tone={tone}>
+                  <div className="schedule-ticket-date">
+                    <time dateTime={`${year}-${month}-${day}`}><span>{weekday}</span><strong>{day}</strong><span>{monthName}</span></time>
+                    <span className="schedule-ticket-time"><Clock size={11} aria-hidden="true" /> {formatTimePtBR(schedule.start_time)}</span>
+                  </div>
+                  <div className="schedule-ticket-main">
+                    <div className="schedule-ticket-top">
+                      <span className="schedule-ticket-ministry">{ministry}</span>
+                      {stamp && <span className="schedule-ticket-stamp" data-status={tradePending ? 'swap' : item.response}>{stamp}</span>}
+                    </div>
+                    <h2><button type="button" onClick={() => navigateTo('detalhes', schedule)}>{schedule.title || 'Culto de Celebração'}</button></h2>
+                    {schedule.location && <p><MapPin size={14} aria-hidden="true" /> {schedule.location}</p>}
+                    {item.ministry_roles?.name && <p><Users size={14} aria-hidden="true" /> {item.ministry_roles.name}</p>}
+                    <div className="schedule-ticket-actions">
+                      {canRespond ? <>
+                        <Button size="sm" disabled={confirming !== null} className="flex-1" onClick={() => void confirm(item.id)}>{confirming === item.id ? 'Confirmando…' : 'Confirmar'}</Button>
+                        <Button variant="outline" size="sm" onClick={() => onOpenTroca(item)}>Trocar</Button>
+                      </> : <button className="schedule-ticket-link" type="button" onClick={() => navigateTo('detalhes', schedule)}>Ver detalhes</button>}
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </>}
     </div>
   );
 }

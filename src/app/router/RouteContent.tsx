@@ -41,9 +41,13 @@ export default function RouteContent() {
             />
           )}
           {currentView === 'escalas' && (
-            <EscalasView 
+            <EscalasView
               navigateTo={navigateTo}
-              user={user}
+              userProfile={userProfile}
+              onOpenTroca={(slot: any) => {
+                setSelectedTrocaSlot(slot);
+                setTrocaModalOpen(true);
+              }}
               userMemberships={userMemberships}
             />
           )}

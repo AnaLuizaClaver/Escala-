@@ -94,6 +94,17 @@ export function AdminEscalasView({ navigateTo }: any) {
     return true;
   });
 
+  const visibleSlots = filteredSchedules.flatMap(schedule => schedule.schedule_members || []);
+  const visibleSlotIds = new Set(visibleSlots.map(slot => slot.id));
+  const confirmedCount = visibleSlots.filter(slot => slot.response === 'confirmed').length;
+  const assignedCount = visibleSlots.filter(slot => slot.ministry_member_id).length;
+  const pendingCount = visibleSlots.filter(slot => slot.ministry_member_id && slot.response === 'pending').length;
+  const swapCount = previewData('schedule_swap_requests', 'read', undefined,
+    request => request.status === 'pending' && visibleSlotIds.has(request.schedule_member_id)).count;
+  const roster = filteredSchedules.flatMap(schedule => (schedule.schedule_members || [])
+    .filter((slot: any) => slot.ministry_member_id)
+    .map((slot: any) => ({ schedule, slot })));
+
   return (
     <div className="p-5 sm:p-6 lg:p-10 max-w-[1400px] mx-auto w-full animate-in fade-in duration-300">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
@@ -101,12 +112,50 @@ export function AdminEscalasView({ navigateTo }: any) {
           <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-1 flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-primary" /> Gerenciamento
           </p>
-          <h1 className="text-3xl sm:text-4xl font-extrabold">Escalas de Culto</h1>
+          <h1 className="text-3xl sm:text-4xl font-extrabold">
+            Escalas{selectedMinistryId !== 'Todos' && ` · ${ministries.find(ministry => ministry.id === selectedMinistryId)?.name || 'Ministério'}`}
+          </h1>
         </div>
         <Button onClick={() => navigateTo('admin_escala_create')} className="font-bold cursor-pointer">
           <Plus className="w-5 h-5 mr-1.5" /> Nova Escala
         </Button>
       </div>
+
+      {!loading && <dl className="mb-6 grid grid-cols-3 gap-2 sm:gap-3" aria-label="Resumo das escalas filtradas">
+        {[
+          { label: 'Confirmados', value: `${confirmedCount} / ${assignedCount}` },
+          { label: 'Pendentes', value: pendingCount },
+          { label: 'Trocas abertas', value: swapCount },
+        ].map(metric => <div key={metric.label} className="rounded-xl border border-border bg-card p-3 sm:p-4">
+          <dt className="text-xs text-muted-foreground sm:text-sm">{metric.label}</dt>
+          <dd className="mt-1 font-display text-xl font-bold sm:text-2xl">{metric.value}</dd>
+        </div>)}
+      </dl>}
+
+      {roster.length > 0 && <section aria-labelledby="schedule-roster-title" className="mb-6 overflow-hidden rounded-xl border border-border bg-card">
+        <h2 id="schedule-roster-title" className="border-b border-border px-4 py-3 font-bold">Pessoas escaladas</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[32rem] text-left text-sm">
+            <thead className="bg-secondary text-xs text-muted-foreground">
+              <tr>{['Pessoa', 'Função', 'Horário', 'Status'].map(label => <th className="px-4 py-3 font-bold" scope="col" key={label}>{label}</th>)}</tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {roster.map(({ schedule, slot }) => (
+                <tr key={slot.id}>
+                  <th scope="row" className="px-4 py-2.5 font-semibold">{slot.ministry_members?.profiles?.full_name || 'Voluntário'}</th>
+                  <td className="px-4 py-2.5">{slot.ministry_roles?.name || 'Voluntário'}</td>
+                  <td className="px-4 py-2.5 whitespace-nowrap">{formatDatePtBR(schedule.date)} · {formatTimePtBR(schedule.start_time)}</td>
+                  <td className="px-4 py-2.5">
+                    <Badge variant={slot.response === 'confirmed' ? 'success' : slot.response === 'declined' ? 'destructive' : 'warning'}>
+                      {slot.response === 'confirmed' ? 'Confirmado' : slot.response === 'declined' ? 'Ausência' : 'Pendente'}
+                    </Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>}
 
       {/* Filter Card */}
       <Card className="mb-8 p-4 bg-secondary/30 flex flex-col sm:flex-row gap-4 border border-border rounded-3xl">
