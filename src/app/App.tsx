@@ -78,7 +78,7 @@ export default function App() {
 function AppInner() {
   const dataRevision = usePreviewDataRevision(state => state.revision);
   const pendingRequestsCount = previewData('ministry_members', 'read', undefined, row => row.status === 'pending').count + previewData('schedule_swap_requests', 'read', undefined, row => row.status === 'pending').count;
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
   const currentView = viewForPath(location.pathname);
@@ -91,13 +91,6 @@ function AppInner() {
   const [trocaModalOpen, setTrocaModalOpen] = useState(false);
   const [selectedTrocaSlot, setSelectedTrocaSlot] = useState<any>(null);
   const [selectedSongModal, setSelectedSongModal] = useState<any>(null);
-
-  useEffect(() => {
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setIsDarkMode(true);
-      document.documentElement.classList.add('dark');
-    }
-  }, []);
 
   const toggleTheme = () => {
     const newMode = !isDarkMode;
