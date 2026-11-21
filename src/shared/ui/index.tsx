@@ -5,7 +5,6 @@ Calendar,
 Camera,
 CheckCircle2,
 Clock,
-Flame,
 Gift,
 HeartHandshake,
 MapPin,
@@ -241,156 +240,86 @@ export function SectionHeader({ title, badge }: { title: string, badge?: string 
   );
 }
 
-export function ProximoCultoCard({ proximaEscala, loading, onClick, onConfirm, onTrocaClick }: any) {
-  if (loading) {
-    return (
-      <Card className="p-8 text-center bg-card border-border">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-        <p className="text-sm font-bold text-muted-foreground">Carregando sua próxima escala...</p>
-      </Card>
-    )
-  }
+export function ProximoCultoCard({ proximaEscala, onClick, onConfirm, onTrocaClick }: any) {
+  const [confirming, setConfirming] = useState(false);
+  const schedule = proximaEscala.schedules;
+  const isPending = proximaEscala.response === 'pending';
+  const isConfirmed = proximaEscala.response === 'confirmed';
+  const ministryName = schedule.ministries?.name || 'Ministério';
+  const roleName = proximaEscala.ministry_roles?.name;
 
-  if (!proximaEscala || !proximaEscala.schedules) {
-    return (
-      <Card className="p-8 text-center bg-secondary/20 border-dashed border-border rounded-3xl">
-        <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center mx-auto mb-4 text-muted-foreground">
-          <Calendar className="w-7 h-7" />
-        </div>
-        <h3 className="font-extrabold text-xl mb-1">Você não possui escalas futuras</h3>
-        <p className="text-sm font-semibold text-muted-foreground mb-4">
-          Quando seu líder publicar uma escala com você, ela aparecerá aqui.
-        </p>
-      </Card>
-    )
+  async function confirm() {
+    setConfirming(true);
+    try {
+      await onConfirm();
+    } finally {
+      setConfirming(false);
+    }
   }
-
-  const schedule = proximaEscala.schedules
-  const isConfirmed = proximaEscala.response === 'confirmed'
-  const isPending = proximaEscala.response === 'pending'
-  const ministryName = schedule.ministries?.name || 'Ministério'
-  const roleName = proximaEscala.ministry_roles?.name || 'Voluntário'
-  const formattedDate = formatFullDatePtBR(schedule.date)
-  const formattedTime = formatTimePtBR(schedule.start_time)
 
   return (
-    <Card hoverable className="p-0 border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-none dark:border dark:border-border">
-      <div className="bg-primary px-6 sm:px-8 py-5 flex items-center justify-between" onClick={onClick}>
-        <Badge variant={isConfirmed ? 'success' : isPending ? 'warning' : 'destructive'} className={isConfirmed ? 'bg-primary-foreground/20 text-primary-foreground' : undefined}>
-          {isConfirmed ? 'Confirmado' : isPending ? 'Pendente' : 'Recusado'}
-        </Badge>
-        <div className="flex items-center gap-2 text-primary-foreground/90 text-sm font-bold">
-          <Clock className="w-4 h-4" /> {formattedDate}
-        </div>
+    <Card className="overflow-hidden rounded-3xl border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card p-5 sm:p-7 lg:p-8">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="flex items-center gap-2 text-sm font-bold text-foreground">
+          <Calendar className="size-4 dark:text-primary" aria-hidden="true" /> Próxima escala
+        </p>
+        {isConfirmed && <Badge variant="success">Presença confirmada</Badge>}
+        {isPending && <Badge variant="warning">Aguardando sua resposta</Badge>}
       </div>
-      <div className="p-6 sm:p-8">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-8 gap-6" onClick={onClick}>
-          <div>
-            <h3 className="font-extrabold text-2xl sm:text-3xl mb-4 tracking-tight">{schedule.title || 'Culto de Celebração'}</h3>
-            <div className="flex flex-wrap items-center gap-3 text-sm font-semibold">
-              <div className="flex items-center gap-2 bg-secondary/50 text-foreground px-4 py-2 rounded-xl">
-                <Calendar className="w-4 h-4 text-muted-foreground" />
-                <span>{formattedDate} • {formattedTime}</span>
-              </div>
-              <div className="flex items-center gap-2 bg-secondary/50 text-foreground px-4 py-2 rounded-xl">
-                <MapPin className="w-4 h-4 text-muted-foreground" />
-                <span>{schedule.location || 'Templo Principal'}</span>
-              </div>
-            </div>
-          </div>
-          <div className="hidden sm:flex w-16 h-16 rounded-2xl bg-secondary items-center justify-center text-foreground shrink-0 rotate-3">
-            {getMinistryIconComponent(ministryName)}
-          </div>
-        </div>
-
-        <div className="bg-secondary/30 rounded-2xl p-5 mb-8 border border-border/50 flex items-center gap-4" onClick={onClick}>
-          <div className="w-1.5 bg-primary rounded-full h-12"></div>
-          <div className="flex-1">
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Ministério & Função</p>
-            <p className="font-extrabold text-lg sm:text-xl">{ministryName} • {roleName}</p>
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-          <Button 
-            size="lg" 
-            className={cn("flex-1 text-base font-extrabold", isConfirmed && "opacity-90")} 
-            onClick={(e: any) => { 
-              e.stopPropagation() 
-              onConfirm?.() 
-            }}
-          >
-            <CheckCircle2 className="w-5 h-5 mr-1" />
-            {isConfirmed ? 'Presença Confirmada' : 'Confirmar presença'}
-          </Button>
-          <Button 
-            variant="secondary" 
-            size="lg" 
-            className="sm:w-auto font-bold" 
-            onClick={(e: any) => { 
-              e.stopPropagation() 
-              onTrocaClick?.() 
-            }}
-          >
-            <ArrowRightLeft className="w-5 h-5 sm:mr-0 mr-2" />
-            <span className="sm:hidden">Solicitar troca</span>
-          </Button>
-        </div>
+      <div className="mt-4 space-y-1.5">
+        <h2 className="text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl lg:text-4xl">{schedule.title || 'Culto de Celebração'}</h2>
+        <p className="text-sm font-medium text-muted-foreground">{ministryName}{roleName && ` · ${roleName}`}</p>
+      </div>
+      <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+        <span className="flex items-center gap-2 font-semibold">
+          <Clock className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          {formatFullDatePtBR(schedule.date)} · {formatTimePtBR(schedule.start_time)}
+        </span>
+        {schedule.location && <span className="flex items-center gap-2 text-muted-foreground"><MapPin className="size-4 shrink-0" aria-hidden="true" />{schedule.location}</span>}
+      </div>
+      <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-4">
+        {isPending && <Button className="w-full sm:w-auto" disabled={confirming} onClick={() => void confirm()}>
+          <CheckCircle2 className="size-4" aria-hidden="true" />{confirming ? 'Confirmando…' : 'Confirmar presença'}
+        </Button>}
+        <Button variant="outline" onClick={onClick}>Ver detalhes</Button>
+        {onTrocaClick && <Button variant="ghost" onClick={onTrocaClick}>
+          <ArrowRightLeft className="size-4" aria-hidden="true" /> Solicitar troca
+        </Button>}
       </div>
     </Card>
   );
 }
 
-export function EscalaAbertaCard({ slot, onQueroServir }: any) {
-  const [applied, setApplied] = useState(false);
-  const schedule = slot?.schedules;
+export function EscalaAbertaCard({ slot, featured, onQueroServir }: any) {
+  const [applying, setApplying] = useState(false);
+  const schedule = slot.schedules;
   const ministry = schedule?.ministries?.name || 'Ministério';
-  const role = slot?.ministry_roles?.name || 'Voluntário';
-  const formattedDate = formatDatePtBR(schedule?.date);
-  const formattedTime = formatTimePtBR(schedule?.start_time);
+  const role = slot.ministry_roles?.name || 'Voluntário';
+
+  async function apply() {
+    setApplying(true);
+    try {
+      await onQueroServir();
+    } finally {
+      setApplying(false);
+    }
+  }
 
   return (
-    <Card className={cn(
-      "flex flex-col h-full bg-gradient-to-b from-card to-card/50 rounded-3xl",
-      applied ? "border-primary/50" : "hover:border-primary/50"
-    )}>
-      {applied ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-center py-6 animate-in zoom-in-95">
-          <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mb-4">
-            <CheckCircle2 className="w-8 h-8 text-primary" />
-          </div>
-          <h4 className="font-extrabold text-xl mb-2">Vaga assumida! 🙌</h4>
-          <p className="text-sm font-semibold text-muted-foreground mb-4">Você foi adicionado(a) à escala.</p>
-          <Badge variant="success">Confirmado</Badge>
+    <Card className="flex flex-col justify-between gap-4 rounded-2xl p-4 sm:p-5">
+      <div className="flex items-start gap-3">
+        <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/15 text-foreground dark:text-primary" aria-hidden="true">
+          {getMinistryIconComponent(ministry)}
         </div>
-      ) : (
-        <>
-          <div className="flex items-center gap-3 mb-6 bg-red-500/10 text-red-600 dark:text-red-400 p-3 rounded-2xl w-fit">
-            <Flame className="w-5 h-5" />
-            <p className="font-extrabold text-sm tracking-widest uppercase">Escala Aberta</p>
-          </div>
-          <div className="space-y-4 mb-8 flex-1">
-            <div className="flex items-center gap-3 text-sm font-bold">
-              <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center"><Clock className="w-4 h-4" /></div>
-              <div><p className="text-xs text-muted-foreground uppercase tracking-widest mb-0.5">Quando</p><p>{formattedDate} • {formattedTime}</p></div>
-            </div>
-            <div className="flex items-center gap-3 text-sm font-bold">
-              <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center"><Users className="w-4 h-4" /></div>
-              <div><p className="text-xs text-muted-foreground uppercase tracking-widest mb-0.5">{ministry}</p><p className="text-destructive font-extrabold">Falta: {role}</p></div>
-            </div>
-          </div>
-          <Button 
-            variant="secondary" 
-            onClick={() => { 
-              setApplied(true); 
-              onQueroServir?.(); 
-            }} 
-            className="w-full hover:bg-primary hover:text-primary-foreground hover:border-primary font-extrabold cursor-pointer"
-          >
-            Quero servir
-          </Button>
-        </>
-      )}
+        <div className="min-w-0 space-y-1">
+          <h3 className="font-extrabold leading-snug">{schedule?.title || 'Escala aberta'}</h3>
+          <p className="text-sm text-muted-foreground">{ministry} · {role}</p>
+          <p className="text-sm font-medium">{formatDatePtBR(schedule?.date)} · {formatTimePtBR(schedule?.start_time)}</p>
+        </div>
+      </div>
+      <Button className="w-full sm:w-fit" variant={featured ? 'default' : 'outline'} size="sm" disabled={applying} onClick={() => void apply()}>
+        {applying ? 'Enviando…' : 'Quero servir'}
+      </Button>
     </Card>
   );
 }
@@ -401,16 +330,16 @@ export function VoluntarioMesCard({ highlight }: any) {
   const reason = highlight?.reason || 'Servindo a igreja com amor e excelência';
 
   return (
-    <Card hoverable className="relative p-0 border-none bg-primary text-primary-foreground overflow-hidden rounded-3xl">
-      <div className="absolute top-0 right-0 w-32 h-32 bg-white/20 rounded-full blur-2xl -translate-y-10 translate-x-10"></div>
+    <Card hoverable className="relative p-0 border border-border bg-card text-card-foreground overflow-hidden rounded-3xl">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl -translate-y-10 translate-x-10"></div>
       <div className="relative z-10 p-6 sm:p-8">
         <div className="flex items-center gap-2 mb-6"><Trophy className="w-5 h-5 fill-current" /><h3 className="font-extrabold uppercase tracking-widest text-xs">Destaque do Mês</h3></div>
         <div className="flex items-center gap-5">
           <Avatar 
-            src={avatar || "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop&auto=format"} 
+            src={avatar}
             alt={name} 
             size="xl" 
-            className="border-4 border-primary-foreground/20 shadow-xl" 
+            className="border-4 border-border shadow-xl"
             fallback={name.charAt(0)}
           />
           <div>

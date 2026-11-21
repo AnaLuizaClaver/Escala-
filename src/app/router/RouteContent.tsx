@@ -28,7 +28,10 @@ export default function RouteContent() {
           {currentView === 'home' && (
             <HomeView 
               navigateTo={navigateTo} 
-              onTrocaClick={() => setTrocaModalOpen(true)}
+              onTrocaClick={(slot: any) => {
+                setSelectedTrocaSlot(slot);
+                setTrocaModalOpen(true);
+              }}
               toggleTheme={toggleTheme}
               isDarkMode={isDarkMode}
               user={user}
