@@ -13,10 +13,10 @@ export type Ministry = {
 export type MinistryLeader = { ministry_id: string; full_name: string };
 
 const coverByMinistry: Record<string, string> = {
-  'Louvor & Adoração': 'louvor.jpg',
-  'Mídia & Transmissão': 'midia.jpg',
-  'Ministério Infantil': 'infantil.jpg',
-  'Recepção & Boas-Vindas': 'recepcao.jpg',
+  'Louvor & Adoração': 'louvor-3d.jpg',
+  'Mídia & Transmissão': 'midia-3d.jpg',
+  'Ministério Infantil': 'infantil-3d.jpg',
+  'Recepção & Boas-Vindas': 'recepcao-3d.jpg',
 };
 
 const membershipStatuses = {
@@ -55,37 +55,32 @@ export default function MinistryCard({
   const cover = coverByMinistry[ministry.name];
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-[1.6rem] border border-border bg-card shadow-sm transition-shadow hover:shadow-lg">
-      <div className="relative isolate flex aspect-[16/10] items-end overflow-hidden bg-[#182019] p-4 sm:p-5">
+    <article className="group relative isolate flex h-full min-h-[25rem] flex-col justify-end overflow-hidden rounded-[1.6rem] border-2 bg-[#101322] text-white shadow-lg motion-safe:transition-transform motion-safe:hover:-translate-y-1 sm:min-h-[28rem]" style={{ borderColor: color ?? undefined }}>
+      <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
         {cover && (
           <img
             src={`${import.meta.env.BASE_URL}ministerios/${cover}`}
             alt=""
             loading="lazy"
-            className="absolute inset-0 -z-20 size-full object-cover motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-105"
+            className="size-full object-cover object-top motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-105"
           />
         )}
         <div
           aria-hidden="true"
-          className="absolute inset-0 -z-10 bg-gradient-to-t from-black/95 via-black/25 to-transparent"
+          className="absolute inset-0 bg-[linear-gradient(to_top,#101322_7%,#101322f2_26%,#1013229e_50%,transparent_74%)]"
         />
-        <div className="flex items-center gap-2.5">
-          <div
-            className="grid size-9 shrink-0 place-items-center rounded-xl text-lg text-black"
-            style={{ backgroundColor: color ?? undefined }}
-            aria-hidden="true"
-          >
-            {ministry.icon || <UsersRound size={19} />}
-          </div>
-          <h3 className="text-lg font-extrabold leading-tight text-white sm:text-xl">{ministry.name}</h3>
-        </div>
       </div>
-      <div className="flex flex-1 flex-col gap-3.5 p-4 sm:p-5">
-        <p className="text-sm leading-relaxed text-muted-foreground">
+      <div className="absolute right-4 top-4 grid size-10 place-items-center rounded-full text-lg text-black shadow-md"
+        style={{ backgroundColor: color ?? undefined }} aria-hidden="true">
+        {ministry.icon || <UsersRound size={19} />}
+      </div>
+      <div className="flex flex-col gap-3 px-4 pb-4 pt-40 sm:px-5 sm:pb-5">
+        <h3 className="text-xl font-extrabold leading-tight tracking-tight sm:text-2xl" style={{ color: color ?? undefined }}>{ministry.name}</h3>
+        <p className="text-sm leading-relaxed text-white/85">
           {ministry.description || 'A equipe ainda não adicionou uma descrição.'}
         </p>
-        <div className="mt-auto flex gap-2.5 border-t border-border pt-3">
-          <UsersRound size={18} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <div className="flex gap-2.5 border-t border-white/20 pt-3">
+          <UsersRound size={18} className="mt-0.5 shrink-0 text-white/75" aria-hidden="true" />
           <div>
             <p className="text-xs font-bold">Liderança</p>
             {leaders.length ? (
@@ -95,7 +90,7 @@ export default function MinistryCard({
                 ))}
               </ul>
             ) : (
-              <p className="mt-0.5 text-sm text-muted-foreground">Liderança ainda não informada</p>
+              <p className="mt-0.5 text-sm text-white/75">Liderança ainda não informada</p>
             )}
           </div>
         </div>
@@ -108,7 +103,8 @@ export default function MinistryCard({
         ) : ministry.active ? (
           <Button
             type="button"
-            className="min-h-10 justify-between rounded-xl"
+            className="min-h-10 justify-between rounded-full text-black hover:brightness-110"
+            style={{ backgroundColor: color ?? undefined }}
             aria-label={`Quero servir em ${ministry.name}`}
             disabled={busy}
             onClick={onRequest}
@@ -116,7 +112,7 @@ export default function MinistryCard({
             Quero servir <ArrowRight size={16} aria-hidden="true" />
           </Button>
         ) : (
-          <p className="text-sm text-muted-foreground">Ministério inativo</p>
+          <p className="text-sm text-white/75">Ministério inativo</p>
         )}
       </div>
     </article>

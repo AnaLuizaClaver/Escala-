@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { BrowserRouter } from 'react-router';
-import { ClipboardList, LogOut, RefreshCw } from 'lucide-react';
+import { BellRing, ClipboardList, LogOut, RefreshCw, X } from 'lucide-react';
 import AuthLayout from '../../app/AuthLayout';
 import BrandLogo from '../../shared/ui/BrandLogo';
 import { Button } from '../../app/components/ui/button';
 import AuthScreen from './AuthScreen';
 import { avatarUrl, finishAvatar } from './avatar';
 import MinistryCard, { type Ministry, type MinistryLeader } from './MinistryCard';
+import PendingMinistryScreen from './PendingMinistryScreen';
 
 export default function OnlineAccess({ client }: { client: SupabaseClient }) {
   const [session, setSession] = useState<Session | null>();
@@ -22,7 +23,7 @@ export default function OnlineAccess({ client }: { client: SupabaseClient }) {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       {session === undefined ? <AuthLayout><p role="status">Verificando sessão…</p></AuthLayout>
-        : session ? <main className="mx-auto min-h-screen max-w-6xl p-5 sm:p-10">
+        : session ? <main className="mx-auto min-h-screen w-full p-5 sm:p-8 lg:w-4/5 lg:px-0">
           <MinistryAccess key={session.user.id} client={client} userId={session.user.id} />
         </main> : <AuthScreen client={client} />}
     </BrowserRouter>
@@ -39,12 +40,32 @@ type AccessData = {
   applicants: { id: string; full_name: string }[];
 };
 
+function readDismissedApprovals(userId: string): string[] {
+  try {
+    const entries: unknown = JSON.parse(localStorage.getItem(`escalae:read-approvals:${userId}`) ?? '[]');
+    return Array.isArray(entries) ? entries.filter((entry): entry is string => typeof entry === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
 function MinistryAccess({ client, userId }: { client: SupabaseClient; userId: string }) {
   const [data, setData] = useState<AccessData>();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [revision, setRevision] = useState(0);
   const [photoError, setPhotoError] = useState(false);
+  const [dismissedApprovals, setDismissedApprovals] = useState(() => readDismissedApprovals(userId));
+
+  const isAdmin = data?.profile.role === 'admin';
+  const pending = data?.memberships.filter(row => row.status === 'pending') ?? [];
+  const waiting = !isAdmin && pending.some(row => row.user_id === userId);
+
+  useEffect(() => {
+    if (!waiting) return;
+    const timer = window.setInterval(() => setRevision(previous => previous + 1), 20_000);
+    return () => window.clearInterval(timer);
+  }, [waiting]);
 
   useEffect(() => {
     let current = true;
@@ -68,7 +89,10 @@ function MinistryAccess({ client, userId }: { client: SupabaseClient; userId: st
         : { data: [], error: null };
       if (applicants.error) throw new Error();
       const photo = profile.data.avatar_url === `${userId}/profile` ? await avatarUrl(client, userId) : undefined;
-      if (current) setData({ profile: profile.data, photo, ministries: ministries.data, memberships: memberships.data, leaders: leaders.data, applicants: applicants.data });
+      if (current) {
+        setError('');
+        setData({ profile: profile.data, photo, ministries: ministries.data, memberships: memberships.data, leaders: leaders.data, applicants: applicants.data });
+      }
     }
     void load().catch(() => {
       if (current) setError('Não foi possível carregar a conta ou os ministérios.');
@@ -95,8 +119,18 @@ function MinistryAccess({ client, userId }: { client: SupabaseClient; userId: st
     }
   }
 
-  const isAdmin = data?.profile.role === 'admin';
-  const pending = data?.memberships.filter(row => row.status === 'pending') ?? [];
+  const approved = data?.memberships.filter(row => row.user_id === userId
+    && row.status === 'approved' && !dismissedApprovals.includes(row.id)) ?? [];
+
+  function dismissApprovals() {
+    const read = [...dismissedApprovals, ...approved.map(row => row.id)];
+    setDismissedApprovals(read);
+    try {
+      localStorage.setItem(`escalae:read-approvals:${userId}`, JSON.stringify(read));
+    } catch {
+      // The notice remains dismissed for this session.
+    }
+  }
 
   function decide(id: string, status: 'approved' | 'rejected') {
     return mutate(() => client.from('ministry_members').update({ status })
@@ -105,17 +139,28 @@ function MinistryAccess({ client, userId }: { client: SupabaseClient; userId: st
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+      <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-brand-surface px-4 py-2 text-white sm:px-6">
         <BrandLogo />
         <div className="flex gap-2">
-          <Button variant="outline" disabled={busy} onClick={refresh}><RefreshCw size={16} aria-hidden="true" /> Atualizar</Button>
-          <Button variant="outline" disabled={busy} onClick={() => void mutate(() => client.auth.signOut(), false)}><LogOut size={16} aria-hidden="true" /> Sair</Button>
+          <Button variant="outline" className="border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white" disabled={busy} onClick={refresh}><RefreshCw size={16} aria-hidden="true" /> Atualizar</Button>
+          <Button variant="outline" className="border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white" disabled={busy} onClick={() => void mutate(() => client.auth.signOut(), false)}><LogOut size={16} aria-hidden="true" /> Sair</Button>
         </div>
       </header>
       {error && <p className="rounded-xl bg-destructive/10 p-3 text-sm text-destructive" role="alert">{error}</p>}
       {photoError && <p className="text-sm text-muted-foreground" role="status">A foto ainda não foi salva. Clique em Atualizar para tentar novamente.</p>}
       {!data && !error && <p role="status">Carregando ministérios…</p>}
-      {data && <>
+      {!isAdmin && approved.length > 0 && <div className="flex items-start gap-3 rounded-2xl border border-primary bg-primary/20 p-4" role="status">
+        <BellRing size={20} className="mt-1 shrink-0" aria-hidden="true" />
+        <div className="flex-1">
+          <p className="font-extrabold">Você foi aceito!</p>
+          <p className="text-sm">Bem-vindo à equipe de {approved.map(row =>
+            data?.ministries.find(ministry => ministry.id === row.ministry_id)?.name ?? 'um ministério').join(', ')}.</p>
+        </div>
+        <Button size="icon" variant="ghost" aria-label="Dispensar aviso" onClick={dismissApprovals}><X size={17} /></Button>
+      </div>}
+      {waiting && data ? <PendingMinistryScreen names={data.ministries.filter(ministry =>
+        pending.some(row => row.user_id === userId && row.ministry_id === ministry.id)).map(ministry => ministry.name)} />
+      : data && <>
         <div className="flex items-center gap-3">
           {data.photo && <img className="size-12 rounded-full object-cover" src={data.photo} alt="Sua foto de perfil" />}
           <div>

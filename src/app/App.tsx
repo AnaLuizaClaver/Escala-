@@ -250,11 +250,11 @@ function AppInner() {
     return (
       <div className="flex min-h-screen w-full bg-background text-foreground font-sans overflow-hidden transition-colors duration-300">
         <div className="flex-1 flex flex-col relative overflow-y-auto custom-scrollbar p-6 sm:p-12">
-          <div className="flex justify-between items-center max-w-2xl mx-auto w-full mb-4">
+          <div className="flex justify-between items-center max-w-2xl mx-auto w-full mb-4 rounded-2xl bg-brand-surface px-4">
             <div className="flex items-center gap-2">
               <BrandLogo />
             </div>
-            <Button variant="ghost" size="sm" onClick={() => showLogin()} className="text-muted-foreground hover:text-foreground font-bold">
+            <Button variant="ghost" size="sm" onClick={() => showLogin()} className="text-white hover:bg-white/10 hover:text-white font-bold">
               <LogOut className="w-4 h-4 mr-2" /> Sair
             </Button>
           </div>
@@ -275,11 +275,11 @@ function AppInner() {
     return (
       <div className="flex min-h-screen w-full bg-background text-foreground font-sans overflow-hidden transition-colors duration-300">
         <div className="flex-1 flex flex-col relative overflow-y-auto custom-scrollbar p-6 sm:p-12">
-          <div className="flex justify-between items-center max-w-md mx-auto w-full mb-4">
+          <div className="flex justify-between items-center max-w-md mx-auto w-full mb-4 rounded-2xl bg-brand-surface px-4">
             <div className="flex items-center gap-2">
               <BrandLogo />
             </div>
-            <Button variant="ghost" size="sm" onClick={() => showLogin()} className="text-muted-foreground hover:text-foreground font-bold">
+            <Button variant="ghost" size="sm" onClick={() => showLogin()} className="text-white hover:bg-white/10 hover:text-white font-bold">
               <LogOut className="w-4 h-4 mr-2" /> Sair
             </Button>
           </div>
@@ -316,7 +316,7 @@ function AppInner() {
       
       {/* Sidebar - Desktop Only */}
       <aside className="hidden md:flex flex-col w-64 lg:w-72 bg-card border-r border-border h-full flex-shrink-0 z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
-        <div className="h-24 flex items-center px-8 border-b border-border/50 cursor-pointer" onClick={() => navigateTo('home')}>
+        <div className="h-24 flex items-center px-8 bg-brand-surface cursor-pointer" onClick={() => navigateTo('home')}>
           <div className="flex items-center gap-3">
             <BrandLogo />
           </div>
@@ -393,7 +393,7 @@ function AppInner() {
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-        <header className="md:hidden h-20 flex items-center justify-between px-5 sm:px-6 border-b border-border bg-background z-20 shrink-0">
+        <header className="md:hidden h-20 flex items-center justify-between px-5 sm:px-6 bg-brand-surface text-white z-20 shrink-0">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigateTo('home')}>
             <BrandLogo />
           </div>
