@@ -46,8 +46,9 @@
 .schedule-tabs button, .schedule-scope button { min-height: 2.75rem; color: var(--muted-foreground); font-size: .875rem; font-weight: 700; }
 .schedule-tabs button { border-bottom: 3px solid transparent; }
 .schedule-tabs button[aria-pressed=true] { border-bottom-color: var(--primary); color: var(--primary); }
-.schedule-scope { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .75rem; }
-.schedule-scope button { padding-inline: .7rem; }
+.schedule-scope { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .35rem; margin-bottom: .75rem; }
+.schedule-scope button { padding-inline: .2rem; font-size: clamp(.68rem, 3vw, .875rem); }
+.schedule-scope select { width: 100%; min-width: 0; font-size: clamp(.68rem, 3vw, .875rem); }
 .schedule-scope button[aria-pressed=true] { border-radius: .75rem; background: var(--accent); color: var(--accent-foreground); }
 .schedule-empty { padding: 1.5rem; border: 1px solid var(--border); border-radius: 1rem; background: var(--card); text-align: center; }
 

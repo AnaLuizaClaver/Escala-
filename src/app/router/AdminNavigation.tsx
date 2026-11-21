@@ -32,7 +32,7 @@ export default function AdminNavigation({ currentView, navigateTo, pendingCount,
       onClick: () => navigateTo(view),
     };
     return mobile
-      ? <BottomNavItem key={view} label={shortLabel} {...props} />
+      ? <BottomNavItem key={view} label={shortLabel} admin {...props} />
       : <SidebarItem key={view} label={label} {...props}
           badge={view === 'admin_solicitacoes' && pendingCount > 0 ? String(pendingCount) : undefined} />;
   });

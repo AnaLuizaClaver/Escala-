@@ -222,16 +222,13 @@ export function SidebarItem({ icon, label, active, badge, notificationCount, onC
   );
 }
 
-export function BottomNavItem({ icon, label, active, notification, onClick }: any) {
+export function BottomNavItem({ icon, label, active, notification, onClick, admin = false }: any) {
   return (
-    <button type="button" aria-current={active ? 'page' : undefined} onClick={onClick} className="flex flex-col items-center justify-center w-16 shrink-0 relative cursor-pointer group gap-1.5 focus-visible:outline-2 focus-visible:outline-ring">
-      <div className={cn(
-        "flex items-center justify-center w-12 h-10 rounded-2xl transition-all duration-300",
-        active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground group-hover:bg-secondary group-hover:text-foreground"
-      )}>
+    <button type="button" aria-current={active ? 'page' : undefined} onClick={onClick} className={cn("relative flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-0.5 cursor-pointer focus-visible:outline-2 focus-visible:outline-ring", admin ? "w-16 shrink-0" : "w-full", active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground")}>
+      <div className="flex items-center justify-center">
         {React.cloneElement(icon, { className: cn("w-5 h-5", active ? "stroke-[2.5px]" : "stroke-2") })}
       </div>
-      <span className={cn("text-[10px] transition-colors", active ? "text-foreground font-extrabold" : "text-muted-foreground font-semibold")}>{label}</span>
+      <span className={cn("text-[9px] leading-tight", active ? "font-extrabold" : "font-semibold")}>{label}</span>
       {notification && <span className="absolute top-0 right-3 w-2.5 h-2.5 bg-destructive border-2 border-background rounded-full"></span>}
     </button>
   );

@@ -444,8 +444,11 @@ function AppInner({ account, client }: { account?: OnlineAccount; client?: Supab
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background/90 backdrop-blur-xl border-t border-border z-30 pb-safe" aria-label={isAdminMode ? 'Navegação administrativa' : 'Navegação do voluntário'}>
-        <div className="flex justify-around items-center px-2 py-3 overflow-x-auto">
+      <nav className={cn("fixed z-30 md:hidden", isAdminMode
+        ? "inset-x-0 bottom-0 border-t border-border bg-background/90 backdrop-blur-xl pb-safe"
+        : "inset-x-3 bottom-[max(.75rem,env(safe-area-inset-bottom))] rounded-2xl border border-foreground bg-card p-1.5 shadow-[var(--sticker-shadow)]")}
+        aria-label={isAdminMode ? 'Navegação administrativa' : 'Navegação do voluntário'}>
+        <div className={isAdminMode ? 'flex items-center overflow-x-auto px-2 py-3' : 'grid grid-cols-6 gap-0.5'}>
           {isAdminMode ? <>
             <AdminNavigation mobile currentView={currentView} navigateTo={navigateTo} pendingCount={pendingRequestsCount} />
           </> : <>
