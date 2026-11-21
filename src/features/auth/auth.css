@@ -38,7 +38,7 @@
   font-weight: 400;
 }
 
-.access-card :is(input, button):focus-visible, .access-photo:focus-within { outline: 2px solid #6a9a22; outline-offset: 2px; }
+.access-card :is(input, button):focus-visible, .access-photo:focus-within { outline: 2px solid var(--ring); outline-offset: 2px; }
 .access-password { position: relative; display: block; }
 .access-password input { padding-inline-end: 3rem; }
 .access-password button { position: absolute; inset-inline-end: 0; inset-block: 0; display: grid; place-items: center; width: 2.75rem; }
@@ -50,8 +50,8 @@
   width: 100%;
   min-height: 2.9rem;
   border-radius: .8rem;
-  background: #c6ff4d;
-  color: #16200c;
+  background: var(--primary);
+  color: var(--primary-foreground);
   font-weight: 800;
 }
 

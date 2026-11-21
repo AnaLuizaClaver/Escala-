@@ -25,6 +25,7 @@ import { getField,previewData } from '../mocks/previewData';
 import { usePreviewDataRevision } from '../shared/state/dataRevision';
 import LoginView from './LoginView';
 import AuthLayout from './AuthLayout';
+import BrandLogo from '../shared/ui/BrandLogo';
 import { supabase } from '../lib/supabase';
 import { LocalDataNotice } from '../shared/ui/LocalDataNotice';
 import AdminOutlet from './router/AdminOutlet';
@@ -251,8 +252,7 @@ function AppInner() {
         <div className="flex-1 flex flex-col relative overflow-y-auto custom-scrollbar p-6 sm:p-12">
           <div className="flex justify-between items-center max-w-2xl mx-auto w-full mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-extrabold text-sm rotate-3">E</div>
-              <span className="font-extrabold text-lg tracking-tight">Escalaê</span>
+              <BrandLogo />
             </div>
             <Button variant="ghost" size="sm" onClick={() => showLogin()} className="text-muted-foreground hover:text-foreground font-bold">
               <LogOut className="w-4 h-4 mr-2" /> Sair
@@ -277,8 +277,7 @@ function AppInner() {
         <div className="flex-1 flex flex-col relative overflow-y-auto custom-scrollbar p-6 sm:p-12">
           <div className="flex justify-between items-center max-w-md mx-auto w-full mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-extrabold text-sm rotate-3">E</div>
-              <span className="font-extrabold text-lg tracking-tight">Escalaê</span>
+              <BrandLogo />
             </div>
             <Button variant="ghost" size="sm" onClick={() => showLogin()} className="text-muted-foreground hover:text-foreground font-bold">
               <LogOut className="w-4 h-4 mr-2" /> Sair
@@ -319,8 +318,7 @@ function AppInner() {
       <aside className="hidden md:flex flex-col w-64 lg:w-72 bg-card border-r border-border h-full flex-shrink-0 z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
         <div className="h-24 flex items-center px-8 border-b border-border/50 cursor-pointer" onClick={() => navigateTo('home')}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center font-extrabold text-xl shadow-sm rotate-3">E</div>
-            <span className="font-extrabold text-2xl tracking-tight">Escalaê</span>
+            <BrandLogo />
           </div>
         </div>
 
@@ -397,8 +395,7 @@ function AppInner() {
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
         <header className="md:hidden h-20 flex items-center justify-between px-5 sm:px-6 border-b border-border bg-background z-20 shrink-0">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigateTo('home')}>
-            <div className="w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-extrabold text-lg rotate-3 shadow-sm">E</div>
-            <span className="font-extrabold text-xl tracking-tight">Escalaê</span>
+            <BrandLogo />
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => navigateTo(isAdminMode ? 'home' : 'admin_dashboard')} aria-label={isAdminMode ? 'Abrir área do voluntário' : 'Abrir administração'}>

@@ -3,6 +3,7 @@ import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { BrowserRouter } from 'react-router';
 import { ClipboardList, LogOut, RefreshCw } from 'lucide-react';
 import AuthLayout from '../../app/AuthLayout';
+import BrandLogo from '../../shared/ui/BrandLogo';
 import { Button } from '../../app/components/ui/button';
 import AuthScreen from './AuthScreen';
 import { avatarUrl, finishAvatar } from './avatar';
@@ -105,7 +106,7 @@ function MinistryAccess({ client, userId }: { client: SupabaseClient; userId: st
   return (
     <div className="space-y-6 sm:space-y-8">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
-        <span className="text-xl font-extrabold tracking-tight">Escalaê</span>
+        <BrandLogo />
         <div className="flex gap-2">
           <Button variant="outline" disabled={busy} onClick={refresh}><RefreshCw size={16} aria-hidden="true" /> Atualizar</Button>
           <Button variant="outline" disabled={busy} onClick={() => void mutate(() => client.auth.signOut(), false)}><LogOut size={16} aria-hidden="true" /> Sair</Button>

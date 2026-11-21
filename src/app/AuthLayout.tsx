@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import BrandLogo from '../shared/ui/BrandLogo';
 
 export default function AuthLayout({ children, controls, fullWidth = false }: {
   children: ReactNode;
@@ -12,8 +13,7 @@ export default function AuthLayout({ children, controls, fullWidth = false }: {
           className="absolute inset-0 -z-20 h-full w-full object-cover object-[center_42%]" />
         <div className="absolute inset-0 -z-10 bg-[#bdf348]/30 mix-blend-screen" />
         <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[#10230c]/95 via-[#10230c]/25 to-[#10230c]/65" />
-        <img src={`${import.meta.env.BASE_URL}escalae-logo.png`} alt="Escalaê"
-          className="relative z-10 h-auto w-44 max-w-full self-start lg:w-64" />
+        <BrandLogo onPhoto />
         <div className="relative z-10 mt-6 max-w-md">
           <p className="text-lg font-bold tracking-tight lg:text-6xl lg:leading-[1.03]">
             Organize.<span className="lg:block"> Conecte.</span><span className="text-[#cbfa76] lg:block"> Sirva.</span>
