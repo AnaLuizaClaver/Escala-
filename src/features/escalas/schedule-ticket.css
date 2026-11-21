@@ -107,6 +107,7 @@
 .schedule-ticket-main p svg { flex: none; }
 .schedule-ticket-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .45rem; }
 .schedule-ticket-actions button { min-height: 2.75rem; }
+.schedule-ticket-actions button:not(.schedule-ticket-link) { border-color: var(--foreground); box-shadow: 0 2px 0 var(--foreground); }
 .schedule-ticket-link { color: var(--accent-foreground); font-size: .8rem; font-weight: 750; }
 
 @media (min-width: 640px) {

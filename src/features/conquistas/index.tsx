@@ -176,7 +176,11 @@ export function ConquistasView({ navigateTo, user, userMemberships = [] }: any) 
                 <li key={badge.id} className="mx-auto w-full max-w-40 text-center">
                   <div className={cn("relative mx-auto grid aspect-square w-[min(100%,6.25rem)] -rotate-3 place-items-center rounded-[1.4rem] border-[3px] border-white text-brand-night shadow-[0_0_0_2px_var(--brand-night),3px_5px_0_2px_var(--brand-night)]",
                     ['bg-brand-blue', 'bg-brand-purple', 'bg-brand-lime'][index % 3])}>
-                    <span aria-hidden="true" className="absolute right-2 top-1 text-xs text-white">✦</span>
+                    <span aria-hidden="true" className="absolute right-2 top-2 flex -rotate-12 gap-0.5">
+                      <i className="h-2 w-1 -rotate-12 rounded-full bg-brand-cream" />
+                      <i className="h-2 w-1 rotate-12 rounded-full bg-brand-cream" />
+                      <i className="h-1.5 w-1 rotate-45 rounded-full bg-brand-cream" />
+                    </span>
                     <span className="grid size-12 place-items-center rounded-full border-2 border-brand-night bg-brand-cream [&_svg]:size-5 [&_svg]:text-brand-night">
                       {badge.icon}
                     </span>
