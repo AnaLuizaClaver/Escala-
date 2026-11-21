@@ -8,15 +8,15 @@ export default function AuthLayout({ children, controls, fullWidth = false }: {
 }) {
   return (
     <div className="min-h-screen w-full bg-background text-foreground font-sans lg:grid lg:grid-cols-[minmax(0,70%)_minmax(0,30%)]">
-      <aside className="relative isolate flex min-h-36 flex-col justify-between overflow-hidden bg-primary p-6 text-white lg:sticky lg:top-0 lg:h-dvh lg:p-12">
+      <aside className="relative isolate flex min-h-36 flex-col justify-between overflow-hidden bg-brand-blue p-6 text-white lg:sticky lg:top-0 lg:h-dvh lg:p-12">
         <img src={`${import.meta.env.BASE_URL}equipe-servindo.png`} alt="" fetchPriority="high"
           className="absolute inset-0 -z-20 h-full w-full object-cover object-[center_42%]" />
-        <div className="absolute inset-0 -z-10 bg-[#bdf348]/30 mix-blend-screen" />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[#10230c]/95 via-[#10230c]/25 to-[#10230c]/65" />
+        <div className="absolute inset-0 -z-10 bg-brand-blue/30 mix-blend-color" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-brand-night via-brand-night/35 to-brand-blue/65" />
         <BrandLogo onPhoto />
         <div className="relative z-10 mt-6 max-w-md">
-          <p className="text-lg font-bold tracking-tight lg:text-6xl lg:leading-[1.03]">
-            Organize.<span className="lg:block"> Conecte.</span><span className="text-[#cbfa76] lg:block"> Sirva.</span>
+          <p className="font-display text-lg font-extrabold tracking-tight lg:text-6xl lg:leading-[1.03]">
+            Talentos que sobem <span className="text-brand-lime">juntos.</span>
           </p>
           <p className="mt-5 hidden max-w-xs text-base text-white/85 lg:block">Organize as escalas e reúna as equipes que servem na sua igreja.</p>
         </div>

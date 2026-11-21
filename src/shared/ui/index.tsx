@@ -35,6 +35,7 @@ export function Button({ children, variant = 'primary', size = 'md', className, 
     outline: 'bg-transparent border-border text-foreground hover:bg-secondary',
     destructive: 'bg-destructive/10 text-destructive hover:bg-destructive/20 border-transparent',
   };
+  const buttonVariant = variant === 'default' ? 'primary' : variant;
   const sizes = {
     xs: 'h-8 px-3 text-[10px] font-bold rounded-full',
     sm: 'h-9 px-4 text-xs font-bold rounded-full',
@@ -47,8 +48,8 @@ export function Button({ children, variant = 'primary', size = 'md', className, 
     <motion.button 
       whileTap={{ scale: 0.95 }}
       className={cn(
-        'inline-flex items-center justify-center gap-2 transition-colors border outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-        variants[variant as keyof typeof variants],
+        'inline-flex items-center justify-center gap-2 transition-colors duration-150 border outline-none disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+        variants[buttonVariant as keyof typeof variants],
         sizes[size as keyof typeof sizes],
         className
       )}
@@ -62,13 +63,13 @@ export function Button({ children, variant = 'primary', size = 'md', className, 
 export function Badge({ children, variant = 'default', className }: any) {
   const variants = {
     default: 'bg-secondary text-foreground',
-    primary: 'bg-primary/20 text-primary-foreground dark:text-primary',
-    success: 'bg-green-500/20 text-green-700 dark:text-green-400',
-    warning: 'bg-orange-500/20 text-orange-700 dark:text-orange-400',
-    destructive: 'bg-red-500/20 text-red-700 dark:text-red-400 animate-pulse',
+    primary: 'bg-accent text-accent-foreground',
+    success: 'bg-success/10 text-success',
+    warning: 'bg-warning/10 text-warning',
+    destructive: 'bg-destructive/10 text-destructive',
   };
   return (
-    <span className={cn('px-2.5 py-1 rounded-md text-[10px] sm:text-xs font-bold uppercase tracking-wider whitespace-nowrap', variants[variant as keyof typeof variants], className)}>
+    <span className={cn('px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-semibold whitespace-nowrap', variants[variant as keyof typeof variants], className)}>
       {children}
     </span>
   );
@@ -87,9 +88,9 @@ export function Card({ children, className, hoverable = false, onClick }: any) {
       whileHover={hoverable ? { y: -4 } : {}}
       transition={{ type: 'spring', stiffness: 300, damping: 20 }}
       className={cn(
-        'bg-card border border-border rounded-3xl p-5 sm:p-6 shadow-sm relative overflow-hidden',
+        'bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-sm relative overflow-hidden',
         hoverable && 'hover:border-primary/50 transition-colors group cursor-pointer hover:shadow-md',
-        onClick && 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+        onClick && 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
         className
       )}
     >
@@ -148,7 +149,7 @@ export function Modal({ isOpen, onClose, title, children }: any) {
       <div className="absolute inset-0" onClick={onClose}></div>
       <div role="dialog" aria-modal="true" aria-label={title || 'Janela de diálogo'} className="w-full max-w-lg relative z-10">
       <Card className="w-full max-w-lg shadow-2xl relative z-10 animate-in zoom-in-95 duration-200 p-6 sm:p-8">
-        <button ref={closeRef} type="button" aria-label="Fechar" onClick={onClose} className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-primary">
+        <button ref={closeRef} type="button" aria-label="Fechar" onClick={onClose} className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-ring">
           <X className="w-5 h-5" />
         </button>
         {title && <h2 className="text-2xl font-extrabold mb-6 pr-8">{title}</h2>}
@@ -202,9 +203,9 @@ export function SidebarItem({ icon, label, active, badge, notificationCount, onC
     <button type="button" aria-current={active ? 'page' : undefined}
       onClick={onClick}
       className={cn(
-      "flex items-center justify-between w-full text-left px-4 py-3.5 rounded-2xl cursor-pointer transition-all duration-300 group focus-visible:outline-2 focus-visible:outline-primary",
+      "flex items-center justify-between w-full text-left px-4 py-3.5 rounded-2xl cursor-pointer transition-all duration-300 group focus-visible:outline-2 focus-visible:outline-ring",
       active 
-        ? "bg-primary text-primary-foreground font-bold shadow-[0_4px_14px_rgba(198,255,77,0.2)]" 
+        ? "bg-primary text-primary-foreground font-bold"
         : "text-muted-foreground hover:bg-secondary hover:text-foreground font-medium"
     )}>
       <div className="flex items-center gap-3.5">
@@ -223,7 +224,7 @@ export function SidebarItem({ icon, label, active, badge, notificationCount, onC
 
 export function BottomNavItem({ icon, label, active, notification, onClick }: any) {
   return (
-    <button type="button" aria-current={active ? 'page' : undefined} onClick={onClick} className="flex flex-col items-center justify-center w-16 shrink-0 relative cursor-pointer group gap-1.5 focus-visible:outline-2 focus-visible:outline-primary">
+    <button type="button" aria-current={active ? 'page' : undefined} onClick={onClick} className="flex flex-col items-center justify-center w-16 shrink-0 relative cursor-pointer group gap-1.5 focus-visible:outline-2 focus-visible:outline-ring">
       <div className={cn(
         "flex items-center justify-center w-12 h-10 rounded-2xl transition-all duration-300",
         active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground group-hover:bg-secondary group-hover:text-foreground"
@@ -263,7 +264,7 @@ export function ProximoCultoCard({ proximaEscala, onClick, onConfirm, onTrocaCli
   }
 
   return (
-    <Card className="overflow-hidden rounded-3xl border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card p-5 sm:p-7 lg:p-8">
+    <Card className="overflow-hidden rounded-3xl border-primary bg-gradient-to-br from-accent via-card to-card shadow-[var(--sticker-shadow)] p-5 sm:p-7 lg:p-8">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="flex items-center gap-2 text-sm font-bold text-foreground">
           <Calendar className="size-4 dark:text-primary" aria-hidden="true" /> Próxima escala

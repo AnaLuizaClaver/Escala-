@@ -3,64 +3,81 @@
 :root {
   color-scheme: light;
   --font-size: 16px;
-  --brand-surface: #152016;
-  --background: #F7F8F4;
-  --foreground: #182019;
+  --brand-blue: #2732FF;
+  --brand-purple: #A74CFF;
+  --brand-lime: #C6FF4D;
+  --brand-cream: #FFF9F0;
+  --brand-night: #171326;
+  --brand-surface: var(--brand-blue);
+  --background: #F8F9FC;
+  --foreground: var(--brand-night);
   --card: #FFFFFF;
-  --card-foreground: #111111;
-  --popover: #FFFFFF;
-  --popover-foreground: #111111;
-  --primary: #C6FF4D;
-  --primary-foreground: #111111; /* Always dark for contrast on the neon green */
-  --secondary: #EAEAEA;
-  --secondary-foreground: #111111;
-  --muted: #EDF0E9;
-  --muted-foreground: #566154;
-  --accent: #C6FF4D;
-  --accent-foreground: #111111;
-  --destructive: #FF4D4D;
+  --card-foreground: var(--foreground);
+  --popover: var(--card);
+  --popover-foreground: var(--foreground);
+  --primary: var(--brand-blue);
+  --primary-foreground: #FFFFFF;
+  --secondary: #F0F1F7;
+  --secondary-foreground: var(--foreground);
+  --muted: var(--secondary);
+  --muted-foreground: #5D5B70;
+  --accent: #EEF0FF;
+  --accent-foreground: #8B2FE0;
+  --success: #087F4B;
+  --warning: #9A5700;
+  --info: #1769D2;
+  --destructive: #C73543;
   --destructive-foreground: #FFFFFF;
-  --border: #DDE3D9;
-  --input: transparent;
-  --input-background: #F0F0F0;
-  --switch-background: #D0D0D0;
+  --border: #DCDDE8;
+  --border-strong: #8F8DA6;
+  --input: var(--border-strong);
+  --input-background: var(--card);
+  --switch-background: var(--border-strong);
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --font-weight-bold: 600;
-  --font-weight-extrabold: 700;
-  --ring: #527323;
-  --radius: 1.25rem; /* 20px for cards */
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+  --ring: var(--brand-blue);
+  --radius: 1rem;
+  --sticker-shadow: 3px 4px 0 var(--brand-night);
 }
 
 .dark {
   color-scheme: dark;
-  --background: #101511;
-  --foreground: #F4F7F1;
-  --card: #19221B;
-  --card-foreground: #FFFFFF;
-  --popover: #19221B;
-  --popover-foreground: #FFFFFF;
-  --primary: #C6FF4D;
-  --primary-foreground: #111111; /* Always dark for contrast */
-  --secondary: #222D24;
-  --secondary-foreground: #FFFFFF;
-  --muted: #253027;
-  --muted-foreground: #ACB9AC;
-  --accent: #C6FF4D;
-  --accent-foreground: #111111;
-  --destructive: #FF4D4D;
-  --destructive-foreground: #FFFFFF;
-  --border: #364538;
-  --input: #253027;
-  --input-background: #202A22;
-  --ring: #C6FF4D;
-  --font-weight-medium: 500;
-  --font-weight-normal: 400;
-  --font-weight-bold: 600;
-  --font-weight-extrabold: 700;
+  --brand-surface: var(--brand-night);
+  --background: #101020;
+  --foreground: var(--brand-cream);
+  --card: #1C1B32;
+  --primary: #B873FF;
+  --primary-foreground: var(--brand-night);
+  --secondary: #282640;
+  --muted-foreground: #C1BED2;
+  --accent: #302446;
+  --accent-foreground: #B873FF;
+  --success: #5BD99B;
+  --warning: #FFB84D;
+  --info: #6AB0FF;
+  --destructive: #FF7A86;
+  --destructive-foreground: var(--brand-night);
+  --border: #44415F;
+  --border-strong: #7C79A0;
+  --input-background: var(--secondary);
+  --ring: var(--brand-lime);
+  --sticker-shadow: 3px 4px 0 var(--brand-purple);
 }
 
 @theme inline {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Sora', system-ui, sans-serif;
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-purple: var(--brand-purple);
+  --color-brand-lime: var(--brand-lime);
+  --color-brand-cream: var(--brand-cream);
+  --color-brand-night: var(--brand-night);
+  --color-border-strong: var(--border-strong);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
   --color-brand-surface: var(--brand-surface);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -108,7 +125,7 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
   }
 
   /**
@@ -118,6 +135,15 @@
 
   html {
     font-size: var(--font-size);
+  }
+
+  :is(h1, h2, h3, h4) {
+    @apply font-display;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
   }
 
   h1 {

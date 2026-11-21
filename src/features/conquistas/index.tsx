@@ -123,33 +123,34 @@ export function ConquistasView({ navigateTo, user, userMemberships = [] }: any) 
         </div>
       </div>
 
-      <Card className="bg-foreground text-background border-foreground mb-10 overflow-hidden relative rounded-3xl">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl -translate-y-20 translate-x-10"></div>
+      <Card className="bg-brand-blue text-white border-brand-night shadow-[var(--sticker-shadow)] mb-10 overflow-hidden relative rounded-3xl">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-brand-purple rounded-full blur-3xl -translate-y-20 translate-x-10"></div>
         <div className="relative z-10 p-6 sm:p-8 flex flex-col md:flex-row items-center md:items-end justify-between gap-8 text-center md:text-left">
           
           <div className="flex flex-col md:flex-row items-center gap-6">
-            <div className="w-24 h-24 rounded-full border-4 border-primary flex flex-col items-center justify-center shrink-0">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Nível</span>
-              <span className="text-3xl font-extrabold text-primary">{currentLevel}</span>
+            <div className="w-24 h-24 rounded-full border-4 border-brand-lime bg-brand-night flex flex-col items-center justify-center shrink-0">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-white">Nível</span>
+              <span className="font-display text-3xl font-extrabold text-brand-lime">{currentLevel}</span>
             </div>
             <div>
               <p className="text-2xl font-extrabold mb-1">
                 {currentLevel === 1 ? 'Voluntário Iniciante' : currentLevel < 4 ? 'Voluntário Dedicado' : 'Líder de Excelência'}
               </p>
-              <p className="text-sm font-medium text-muted-foreground max-w-sm">
+              <p className="text-sm font-medium text-white/90 max-w-sm">
                 Você já completou {stats.totalConfirmed} {stats.totalConfirmed === 1 ? 'escala' : 'escalas'} no altar.
               </p>
             </div>
           </div>
           
           <div className="w-full md:w-72">
-            <div className="flex justify-between text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">
+            <img src={`${import.meta.env.BASE_URL}brand/pulo.png`} alt="" className="mx-auto -mt-3 mb-1 size-20 md:mr-0" />
+            <div className="flex justify-between text-xs font-bold text-white uppercase tracking-widest mb-3">
               <span>{totalXp} XP</span>
-              <span className="text-primary">Faltam {xpNeededForNext - xpInCurrentLevel} XP</span>
+              <span className="text-white">Faltam {xpNeededForNext - xpInCurrentLevel} XP</span>
             </div>
-            <div className="h-4 bg-secondary/30 rounded-full overflow-hidden">
+            <div className="h-4 border border-white/70 bg-brand-night rounded-full overflow-hidden">
               <div 
-                className="h-full bg-primary rounded-full transition-all relative"
+                className="h-full bg-brand-lime rounded-full transition-all relative"
                 style={{ width: `${progressPercent}%` }}
               >
                 <div className="absolute inset-0 bg-white/20"></div>

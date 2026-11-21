@@ -153,12 +153,12 @@ export function HomeView({ toggleTheme, isDarkMode, navigateTo, onTrocaClick, un
         ) : (
           <section className="relative isolate overflow-hidden rounded-3xl bg-brand-surface p-5 text-white sm:p-8" aria-labelledby="empty-agenda-heading">
             <img src={`${import.meta.env.BASE_URL}equipe-servindo.png`} alt="" className="pointer-events-none absolute inset-y-0 right-0 -z-20 h-full w-full object-cover object-center sm:w-3/5" />
-            <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,#152016_20%,#152016ed_58%,#15201665)]" />
+            <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-r from-brand-blue via-brand-night/95 to-brand-night/45" />
             <div className="max-w-sm space-y-3">
-              <Calendar className="size-5 text-[#c6ff4d]" aria-hidden="true" />
+              <Calendar className="size-5 text-brand-lime" aria-hidden="true" />
               <h2 id="empty-agenda-heading" className="text-xl font-extrabold sm:text-3xl">Sua agenda está livre</h2>
               <p className="text-sm text-white/85">Você ainda não tem uma escala futura. As próximas escalas e vagas vão aparecer aqui.</p>
-              <Button className="mt-1 bg-[#c6ff4d] text-[#152016] hover:bg-[#dcff8c]" onClick={() => navigateTo('escalas')}>
+              <Button className="mt-1 bg-brand-lime text-brand-night hover:brightness-105" onClick={() => navigateTo('escalas')}>
                 Ver escalas <ChevronRight className="size-4" />
               </Button>
             </div>

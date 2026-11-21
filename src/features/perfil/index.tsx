@@ -442,7 +442,7 @@ export function ConfiguracoesView({ toggleTheme, isDarkMode, navigateTo, user, u
   const { showLogin: authSignOut } = usePreview();
   const [pushNotif, setPushNotif] = useState(true);
   const [whatsappNotif, setWhatsappNotif] = useState(false);
-  const [selectedColor, setSelectedColor] = useState('#C6FF4D');
+  const [selectedColor, setSelectedColor] = useState(() => document.documentElement.style.getPropertyValue('--personal-highlight').trim() || '#C6FF4D');
 
   const [cfgFullName, setCfgFullName] = useState(userProfile?.full_name || '');
   const [cfgPhone, setCfgPhone] = useState(userProfile?.phone || '');
@@ -478,16 +478,14 @@ export function ConfiguracoesView({ toggleTheme, isDarkMode, navigateTo, user, u
   
 
   const colors = [
-    { name: 'Neon Green', hex: '#C6FF4D' },
-    { name: 'Ocean Blue', hex: '#3b82f6' },
-    { name: 'Amethyst', hex: '#a855f7' },
-    { name: 'Sunset', hex: '#f97316' },
-    { name: 'Rose', hex: '#ec4899' }
+    { name: 'Lima', hex: '#C6FF4D' },
+    { name: 'Azul', hex: '#2732FF' },
+    { name: 'Roxo', hex: '#A74CFF' },
   ];
 
   const handleColorChange = (hex: string) => {
     setSelectedColor(hex);
-    document.documentElement.style.setProperty('--primary', hex);
+    document.documentElement.style.setProperty('--personal-highlight', hex);
   };
 
   const handleLogout = async () => {
@@ -541,16 +539,18 @@ export function ConfiguracoesView({ toggleTheme, isDarkMode, navigateTo, user, u
 
             <div className="pt-6 border-t border-border">
               <h4 className="font-extrabold text-base mb-1">Cor de Destaque</h4>
-              <p className="text-sm font-semibold text-muted-foreground mb-4">Personalize a cor principal do aplicativo</p>
+              <p className="text-sm font-semibold text-muted-foreground mb-4">Escolha a cor da faixa decorativa na navegação</p>
               <div className="flex gap-3 flex-wrap">
                 {colors.map(c => (
                   <button 
                     key={c.hex}
+                    aria-label={c.name}
+                    aria-pressed={selectedColor === c.hex}
                     onClick={() => handleColorChange(c.hex)}
                     className={cn("w-12 h-12 rounded-full flex items-center justify-center transition-all cursor-pointer", selectedColor === c.hex ? "ring-2 ring-offset-2 ring-offset-background scale-110 shadow-md" : "hover:scale-105 border border-border/10")}
                     style={{ backgroundColor: c.hex }}
                   >
-                    {selectedColor === c.hex && <Check className="w-5 h-5 text-[#111111]" />}
+                    {selectedColor === c.hex && <Check className="w-5 h-5 text-white drop-shadow-[0_1px_2px_black]" />}
                   </button>
                 ))}
               </div>

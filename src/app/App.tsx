@@ -351,7 +351,7 @@ function AppInner({ account, client }: { account?: OnlineAccount; client?: Supab
       
       {/* Sidebar - Desktop Only */}
       <aside className="hidden md:flex flex-col w-64 lg:w-72 bg-card border-r border-border h-full flex-shrink-0 z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
-        <div className="h-24 flex items-center px-8 bg-brand-surface cursor-pointer" onClick={() => navigateTo('home')}>
+        <div className="h-24 flex items-center px-8 bg-brand-surface border-b-2 border-[var(--personal-highlight,transparent)] cursor-pointer" onClick={() => navigateTo('home')}>
           <div className="flex items-center gap-3">
             <BrandLogo />
           </div>
@@ -424,7 +424,7 @@ function AppInner({ account, client }: { account?: OnlineAccount; client?: Supab
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-        <header className="md:hidden h-20 flex items-center justify-between px-5 sm:px-6 bg-brand-surface text-white z-20 shrink-0">
+        <header className="md:hidden h-20 flex items-center justify-between px-5 sm:px-6 bg-brand-surface border-b-2 border-[var(--personal-highlight,transparent)] text-white z-20 shrink-0">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigateTo('home')}>
             <BrandLogo />
           </div>

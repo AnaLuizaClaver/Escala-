@@ -178,21 +178,20 @@ export function EscalasView({ navigateTo, user, userMemberships }: any) {
               <Card 
                 key={item.id} 
                 hoverable 
-                className="p-0 overflow-hidden flex flex-col md:flex-row rounded-3xl cursor-pointer border-border" 
+                className="p-0 overflow-hidden grid grid-cols-[4.75rem_minmax(0,1fr)] sm:grid-cols-[7rem_minmax(0,1fr)] rounded-2xl cursor-pointer border-border-strong"
                 onClick={() => navigateTo('detalhes', s)}
               >
-                <div className="bg-secondary/30 md:w-48 p-5 md:p-6 flex flex-row md:flex-col items-center md:items-start justify-between md:justify-center border-b md:border-b-0 md:border-r border-border shrink-0">
-                  <div className="flex flex-col md:items-start">
-                    <span className="text-xs font-extrabold text-muted-foreground uppercase tracking-widest">{monthAbbr}</span>
-                    <span className="text-3xl font-extrabold">{day}</span>
+                <div className={cn("flex flex-col items-center justify-center gap-2 border-r border-dashed border-brand-night/50 px-1 py-4 sm:gap-3", isConfirmed ? "bg-brand-lime text-brand-night" : isPending ? "bg-[#B873FF] text-brand-night" : "bg-brand-blue text-white")}>
+                  <div className="flex flex-col items-center">
+                    <span className="text-xs font-extrabold uppercase tracking-widest">{monthAbbr}</span>
+                    <span className="font-display text-3xl font-extrabold">{day}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm font-bold bg-background md:bg-secondary md:mt-4 px-3 py-1.5 rounded-xl border border-border md:border-none">
-                    <Clock className="w-4 h-4 text-primary" />
+                  <div className="flex items-center gap-2 text-sm font-bold border border-current px-1.5 py-0.5 rounded-full text-xs">
                     {formatTimePtBR(s.start_time)}
                   </div>
                 </div>
 
-                <div className="p-5 md:p-6 flex-1 flex flex-col justify-center">
+                <div className="min-w-0 p-3.5 sm:p-5 flex flex-col justify-center">
                   <div className="flex flex-wrap gap-2 mb-3">
                     {userResponse !== 'none' && (
                       <Badge variant={isConfirmed ? 'success' : isPending ? 'warning' : 'destructive'}>

@@ -5,7 +5,7 @@
   height: 15rem;
   margin-inline: auto;
   border-radius: 2rem;
-  background: radial-gradient(ellipse at 76% 12%, #a4d94038, transparent 65%);
+  background: radial-gradient(ellipse at 76% 12%, color-mix(in srgb, var(--brand-purple) 32%, transparent), transparent 65%);
 }
 
 .pending-steps {
@@ -20,10 +20,10 @@
 
 .pending-steps i {
   height: 2rem;
-  border-top: 2px solid #c6ff4d80;
+  border-top: 2px solid var(--brand-lime);
   border-right: 1px solid #c6ff4d22;
   border-radius: .55rem .55rem 0 0;
-  background: linear-gradient(#c6ff4d59, #c6ff4d0d);
+  background: linear-gradient(color-mix(in srgb, var(--brand-lime) 30%, transparent), #c6ff4d0d);
 }
 
 .pending-steps i:nth-child(2) { height: 4rem; }
