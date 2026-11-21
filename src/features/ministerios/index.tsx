@@ -843,10 +843,11 @@ export function AdminMinisterioDetalhesView({ ministry, navigateTo }: any) {
       <Modal isOpen={isRoleModalOpen} onClose={() => setIsRoleModalOpen(false)} title="Nova Função no Ministério">
         <form onSubmit={handleAddRole} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
+            <label htmlFor="ministry-role-name" className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
               Nome da Função / Posição *
             </label>
             <input 
+              id="ministry-role-name"
               type="text" 
               value={newRoleName}
               onChange={(e) => setNewRoleName(e.target.value)}

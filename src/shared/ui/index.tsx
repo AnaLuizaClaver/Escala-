@@ -120,12 +120,17 @@ export function Avatar({ src, alt, size = 'md', className, fallback }: any) {
 
 export function Modal({ isOpen, onClose, title, children }: any) {
   const closeRef = React.useRef<HTMLButtonElement>(null);
+  const onCloseRef = React.useRef(onClose);
+  React.useLayoutEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   React.useEffect(() => {
     if (!isOpen) return;
     const previous = document.activeElement as HTMLElement | null;
     closeRef.current?.focus();
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') onCloseRef.current();
       if (event.key !== 'Tab') return;
       const dialog = closeRef.current?.closest('[role="dialog"]');
       const focusable = Array.from(dialog?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href]') || []);
@@ -136,7 +141,7 @@ export function Modal({ isOpen, onClose, title, children }: any) {
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => { document.removeEventListener('keydown', handleKeyDown); previous?.focus(); };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
