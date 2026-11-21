@@ -1,0 +1,61 @@
+@layer components {
+  .page-intro {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    padding: clamp(1rem, 4vw, 1.75rem);
+    border: 2px solid var(--brand-night);
+    border-radius: 1.5rem;
+    background: var(--brand-blue);
+    color: var(--brand-cream);
+  }
+
+  .page-intro:not(.quiet)::before, .brand-profile-banner::before {
+    position: absolute;
+    z-index: -1;
+    top: -6rem;
+    right: -5rem;
+    width: clamp(12rem, 28vw, 23rem);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--brand-purple);
+    content: '';
+    pointer-events: none;
+  }
+
+  .page-intro:not(.quiet) h1 { line-height: 1.15; }
+  .page-intro:not(.quiet) p.text-muted-foreground { color: var(--brand-cream); }
+  .page-intro:not(.quiet) > div > button:focus-visible { outline-color: var(--brand-lime); }
+  .page-intro.quiet {
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background: var(--card);
+    color: var(--foreground);
+  }
+
+  .brand-profile-banner {
+    isolation: isolate;
+    background: var(--brand-blue);
+    box-shadow: var(--sticker-shadow);
+  }
+
+  .action-button, .outlined-button {
+    box-shadow: 0 2px 0 var(--foreground);
+  }
+
+  :is(.action-button, .outlined-button):disabled { box-shadow: none; }
+  .app-dialog-overlay [role="dialog"] { max-height: calc(100dvh - 2rem); overflow-y: auto; }
+
+  .management-shell .app-card:not([role="dialog"] .app-card) {
+    border-radius: .75rem;
+    box-shadow: none;
+  }
+
+  .management-shell :is(.action-button, .outlined-button) { box-shadow: none; }
+  .management-shell :is(input:not([type=checkbox], [type=radio], [type=color], [type=file]), textarea, select) {
+    border-color: var(--border-strong);
+  }
+
+  .management-shell :is(table, thead, tbody) { font-variant-numeric: tabular-nums; }
+  .ministry-picker article { min-width: 0; }
+}

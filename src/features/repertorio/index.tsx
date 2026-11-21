@@ -89,7 +89,7 @@ export function RepertorioView({ onOpenSong }: any) {
 
   return (
     <div className="p-5 sm:p-6 lg:p-10 max-w-[1400px] mx-auto w-full animate-in fade-in duration-300 h-full flex flex-col">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 shrink-0">
+      <div className="page-intro  flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 shrink-0">
         <div>
           <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-1">Biblioteca Musical</p>
           <h1 className="text-3xl sm:text-4xl font-extrabold">Repertório</h1>

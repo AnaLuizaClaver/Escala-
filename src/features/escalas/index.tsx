@@ -268,7 +268,7 @@ export function DetalhesView({ escala, onBack, onOpenTroca, onOpenSong, user, us
 
   return (
     <div className="p-5 sm:p-6 lg:p-10 max-w-[1200px] mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-300">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+      <div className="page-intro quiet flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
         <div className="flex items-center gap-4">
           <Button variant="secondary" size="icon" onClick={onBack}>
             <ChevronLeft className="w-5 h-5" />

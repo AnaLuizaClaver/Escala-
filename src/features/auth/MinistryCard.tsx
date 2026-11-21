@@ -18,17 +18,18 @@ const coverByMinistry: Record<string, string> = {
   'Recepção & Boas-Vindas': 'recepcao-3d.jpg',
 };
 
-export default function MinistryCard({ ministry, leaders, member, onOpen }: {
+export default function MinistryCard({ ministry, leaders, member, onOpen, selected }: {
   ministry: Ministry;
   leaders: MinistryLeader[];
   member: boolean;
   onOpen: () => void;
+  selected?: boolean;
 }) {
-  const color = /^#[a-f\d]{6}$/i.test(ministry.color ?? '') ? ministry.color : '#c6ff4d';
+  const color = /louvor/i.test(ministry.name) ? 'var(--brand-purple)' : /mídia|midia/i.test(ministry.name) ? 'var(--brand-blue)' : 'var(--brand-lime)';
   const cover = coverByMinistry[ministry.name];
 
   return (
-    <article className="group relative isolate flex aspect-[4/5] w-full flex-col justify-end overflow-hidden rounded-[1.6rem] border-2 bg-[#101322] text-white shadow-lg motion-safe:transition-transform motion-safe:hover:-translate-y-1" style={{ borderColor: color ?? undefined }}>
+    <article className="group relative isolate flex aspect-[4/5] w-full flex-col justify-end overflow-hidden rounded-2xl border-2 bg-brand-night text-brand-cream shadow-[var(--sticker-shadow)] motion-safe:transition-transform motion-safe:hover:-translate-y-1" style={{ borderColor: selected ? 'var(--ring)' : 'var(--brand-cream)' }}>
       <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
         {cover && (
           <img
@@ -43,12 +44,12 @@ export default function MinistryCard({ ministry, leaders, member, onOpen }: {
           className="absolute inset-0 bg-[linear-gradient(to_top,#101322_7%,#101322f2_26%,#1013229e_50%,transparent_74%)]"
         />
       </div>
-      <div className="absolute right-4 top-4 grid size-10 place-items-center rounded-full text-lg text-black shadow-md"
-        style={{ backgroundColor: color ?? undefined }} aria-hidden="true">
+      <div className="absolute right-4 top-4 grid size-10 place-items-center rounded-full border border-brand-night text-lg shadow-md"
+        style={{ backgroundColor: color, color: color === 'var(--brand-blue)' ? 'white' : 'var(--brand-night)' }} aria-hidden="true">
         {ministry.icon || <UsersRound size={19} />}
       </div>
       <div className="max-h-full space-y-2.5 overflow-y-auto px-4 pb-4 pt-4 sm:px-5 sm:pb-5">
-        <h3 className="text-xl font-extrabold leading-tight tracking-tight sm:text-2xl" style={{ color: color ?? undefined }}>{ministry.name}</h3>
+        <h3 className="text-xl font-extrabold leading-tight tracking-tight sm:text-2xl">{ministry.name}</h3>
         <p className="text-sm leading-relaxed text-white/85">
           {ministry.description || 'A equipe ainda não adicionou uma descrição.'}
         </p>
@@ -70,10 +71,10 @@ export default function MinistryCard({ ministry, leaders, member, onOpen }: {
         {member && <p className="flex items-center gap-2 text-xs font-bold text-green-200">
           <CheckCircle2 size={15} aria-hidden="true" /> Você faz parte da equipe
         </p>}
-        <button type="button" onClick={onOpen} aria-label={`Abrir ${ministry.name}`}
-          className="flex min-h-10 w-full items-center justify-between rounded-full px-4 text-sm font-bold text-black hover:brightness-110"
-          style={{ backgroundColor: color ?? undefined }}>
-          Abrir ministério <ArrowRight size={16} aria-hidden="true" />
+        <button type="button" onClick={onOpen} aria-pressed={selected} aria-label={`${selected === undefined ? 'Abrir' : 'Selecionar'} ${ministry.name}`}
+          className="flex min-h-11 w-full items-center justify-between rounded-full border border-brand-night px-4 text-sm font-bold hover:brightness-110"
+          style={{ backgroundColor: selected === false ? 'var(--brand-cream)' : 'var(--brand-lime)', color: 'var(--brand-night)' }}>
+          {selected === undefined ? 'Abrir ministério' : selected ? 'Selecionado' : 'Selecionar ministério'} <ArrowRight size={16} aria-hidden="true" />
         </button>
       </div>
     </article>

@@ -7,7 +7,7 @@ import BrandLogo from '../../shared/ui/BrandLogo';
 import { Button } from '../../app/components/ui/button';
 import AuthScreen from './AuthScreen';
 import { avatarUrl, finishAvatar } from './avatar';
-import type { Ministry } from './MinistryCard';
+import MinistryCard, { type Ministry, type MinistryLeader } from './MinistryCard';
 import PendingMinistryScreen from './PendingMinistryScreen';
 import { isMinistryOption } from './ministry-options';
 import { isPublicPath, pathForView } from '../../app/router/routes';
@@ -49,6 +49,7 @@ type AccessData = {
   profile: { full_name: string; role: string };
   photo?: string;
   ministries: Ministry[];
+  leaders: MinistryLeader[];
   memberships: { id: string; user_id: string; ministry_id: string; status: string }[];
 };
 
@@ -93,10 +94,11 @@ function MinistryAccess({ client, session, renderApp, requestedMinistry }: Acces
       } catch {
         if (current) setPhotoError(true);
       }
-      const [profile, ministries, memberships] = await Promise.all([
+      const [profile, ministries, memberships, leaders] = await Promise.all([
         client.from('profiles').select('full_name, role, avatar_url').eq('id', userId).single(),
         client.from('ministries').select('id, name, active, description, icon, color').order('name'),
         client.from('ministry_members').select('id, user_id, ministry_id, status').eq('user_id', userId),
+        client.rpc('ministry_leader_names'),
       ]);
       if (profile.error || ministries.error || memberships.error) throw new Error();
       let visibleMemberships = memberships.data;
@@ -114,7 +116,7 @@ function MinistryAccess({ client, session, renderApp, requestedMinistry }: Acces
       const photo = profile.data.avatar_url === `${userId}/profile` ? await avatarUrl(client, userId) : undefined;
       if (current) {
         setError('');
-        setData({ profile: profile.data, photo, ministries: ministries.data, memberships: visibleMemberships });
+        setData({ profile: profile.data, photo, ministries: ministries.data, memberships: visibleMemberships, leaders: leaders.data ?? [] });
       }
     }
     void load().catch(() => {
@@ -201,8 +203,10 @@ function MinistryAccess({ client, session, renderApp, requestedMinistry }: Acces
             <p className="mt-1 text-sm text-muted-foreground">{isAdmin ? 'Visão de membro · acesso administrativo' : 'Conta de voluntário'}</p>
           </div>
         </div>
-        {!isAdmin && activeMemberships.length === 0 && <section className="max-w-xl space-y-4 rounded-3xl border border-border bg-card p-5">
-          <h2 className="text-xl font-extrabold">Pedido de entrada</h2>
+        {!isAdmin && activeMemberships.length === 0 && <section aria-labelledby="ministry-picker-title" className="ministry-picker max-w-[46rem] space-y-5">
+          <header className="page-intro">
+            <h2 id="ministry-picker-title" className="text-2xl font-extrabold sm:text-3xl">Onde você quer servir?</h2>
+          </header>
           {ownMemberships.some(row => row.status === 'rejected') &&
             <p className="text-sm text-muted-foreground">Seu pedido anterior foi recusado.</p>}
           {availableMinistries.length > 0 ? <form className="space-y-4" onSubmit={event => {
@@ -210,15 +214,15 @@ function MinistryAccess({ client, session, renderApp, requestedMinistry }: Acces
             if (!availableMinistries.some(ministry => ministry.id === selectedMinistry)) return;
             void mutate(() => client.from('ministry_members').insert({ user_id: userId, ministry_id: selectedMinistry }));
           }}>
-            <label className="block space-y-2 text-sm">
-              <span className="font-bold">Onde você quer servir?</span>
-              <select required value={selectedMinistry} onChange={event => setSelectedMinistry(event.target.value)}
-                className="block w-full rounded-xl border border-border bg-background p-3">
-                <option value="" disabled>Selecione um ministério</option>
-                {availableMinistries.map(ministry => <option key={ministry.id} value={ministry.id}>{ministry.name}</option>)}
-              </select>
-            </label>
-            <Button type="submit" disabled={busy}>Enviar pedido</Button>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {availableMinistries.map(ministry => (
+                <MinistryCard key={ministry.id} ministry={ministry}
+                  leaders={data.leaders.filter(leader => leader.ministry_id === ministry.id)}
+                  member={false} selected={selectedMinistry === ministry.id}
+                  onOpen={() => setSelectedMinistry(ministry.id)} />
+              ))}
+            </div>
+            <Button type="submit" disabled={busy || !selectedMinistry}>Enviar pedido</Button>
           </form> : <p className="text-sm text-muted-foreground">Converse com a liderança para revisar seu acesso.</p>}
         </section>}
       </>}

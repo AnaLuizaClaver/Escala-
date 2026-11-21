@@ -114,7 +114,7 @@ export function NotificacoesView({ navigateTo, user, userMemberships = [] }: any
 
   return (
     <div className="p-5 sm:p-6 lg:p-10 max-w-[800px] mx-auto w-full animate-in fade-in duration-300">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+      <div className="page-intro quiet flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-1">Avisos Diretos</p>
           <h1 className="text-3xl sm:text-4xl font-extrabold flex items-center gap-3">
@@ -173,6 +173,9 @@ export function NotificacoesView({ navigateTo, user, userMemberships = [] }: any
 }
 
 export function NotificationCard({ data }: any) {
+  const interactive = typeof data.action === 'function';
+  const urgent = data.type === 'pedido_troca' || data.type === 'nova_escala';
+  const category = urgent ? 'Precisa de atenção' : data.type === 'aniversario' ? 'Comunidade' : 'Operacional';
   const getIcon = () => {
     switch (data.type) {
       case 'escala_aberta': return <Flame className="w-5 h-5 text-red-500" />;
@@ -184,12 +187,15 @@ export function NotificationCard({ data }: any) {
     }
   };
 
+  const Row = interactive ? 'button' : 'div';
   return (
-    <div 
+    <Row
+      type={interactive ? 'button' : undefined}
       onClick={data.action}
       className={cn(
-        "p-4 rounded-3xl border flex gap-4 transition-all cursor-pointer group",
-        !data.read ? "bg-card border-primary/30 shadow-[0_4px_20px_rgba(198,255,77,0.05)]" : "bg-card border-border hover:bg-secondary/50"
+        "group flex w-full gap-3 rounded-2xl border bg-card p-4 text-left",
+        !data.read ? "border-primary/50" : "border-border",
+        interactive && "cursor-pointer transition-colors hover:bg-secondary/50"
       )}
     >
       <div className={cn(
@@ -199,16 +205,19 @@ export function NotificationCard({ data }: any) {
         {getIcon()}
       </div>
       <div className="flex-1 pt-0.5 min-w-0">
+        <span className={cn("mb-1 inline-flex items-center gap-1.5 text-xs font-bold", urgent ? "text-warning" : "text-info")}>
+          <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />{category}
+        </span>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
           <p className="font-extrabold text-base truncate">{data.title}</p>
           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest bg-secondary px-2 py-0.5 rounded-md w-fit shrink-0">{data.time}</span>
         </div>
-        <p className="text-sm font-semibold text-muted-foreground truncate">{data.description}</p>
+        <p className="break-words text-sm text-muted-foreground">{data.description}</p>
       </div>
       {!data.read && (
         <div className="w-2 h-2 rounded-full bg-primary mt-2 shrink-0"></div>
       )}
-    </div>
+    </Row>
   );
 }
 

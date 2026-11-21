@@ -106,7 +106,7 @@ export function HomeView({ toggleTheme, isDarkMode, navigateTo, onTrocaClick, un
 
   return (
     <div className="mx-auto w-full max-w-[1240px] space-y-8 px-5 py-6 sm:px-8 lg:space-y-10 lg:px-10 lg:py-9">
-      <header className="flex items-center justify-between gap-3">
+      <header className="page-intro flex items-center justify-between gap-3">
         <h1 className="text-2xl font-extrabold tracking-tight sm:text-4xl">{greeting}, {firstName}</h1>
         <div className="flex shrink-0 items-center gap-2">
           <Button variant="ghost" size="icon" className="hidden md:inline-flex" onClick={toggleTheme}

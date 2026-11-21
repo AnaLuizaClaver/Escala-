@@ -172,9 +172,8 @@ export function PerfilView({
     <div className="p-5 sm:p-6 lg:p-10 max-w-[1000px] mx-auto w-full animate-in fade-in duration-300">
       {/* Header / Banner */}
       <div className="relative mb-20 md:mb-24">
-        <div className="h-32 md:h-48 w-full bg-primary rounded-3xl overflow-hidden relative border-4 border-card shadow-sm">
+        <div className="brand-profile-banner h-32 md:h-48 w-full rounded-3xl overflow-hidden relative border-2 border-brand-night">
           <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(0,0,0,0.05)_25%,transparent_25%,transparent_50%,rgba(0,0,0,0.05)_50%,rgba(0,0,0,0.05)_75%,transparent_75%,transparent)] bg-[length:24px_24px]"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-primary/50 to-transparent"></div>
         </div>
         <div className="absolute -bottom-12 md:-bottom-16 left-6 md:left-10 flex items-end gap-5">
           <Avatar 
@@ -191,10 +190,10 @@ export function PerfilView({
           </div>
         </div>
         <div className="absolute -bottom-6 right-6 flex gap-2">
-          <Button variant="secondary" size="icon" className="cursor-pointer" onClick={() => setEditModalOpen(true)}>
+          <Button variant="secondary" size="icon" className="cursor-pointer" aria-label="Editar perfil" onClick={() => setEditModalOpen(true)}>
             <Edit2 className="w-5 h-5" />
           </Button>
-          <Button variant="secondary" size="icon" className="cursor-pointer" onClick={() => navigateTo('configuracoes')}>
+          <Button variant="secondary" size="icon" className="cursor-pointer" aria-label="Abrir configurações" onClick={() => navigateTo('configuracoes')}>
             <Settings className="w-5 h-5" />
           </Button>
         </div>
@@ -504,7 +503,7 @@ export function ConfiguracoesView({ toggleTheme, isDarkMode, navigateTo, user, u
   return (
     <div className="p-5 sm:p-6 lg:p-10 max-w-[800px] mx-auto w-full animate-in fade-in duration-300">
       
-      <div className="flex items-center gap-4 mb-8">
+      <div className="page-intro quiet flex items-center gap-4 mb-8">
         <Button variant="secondary" size="icon" onClick={() => navigateTo('perfil')} className="md:hidden cursor-pointer">
           <ChevronLeft className="w-5 h-5" />
         </Button>

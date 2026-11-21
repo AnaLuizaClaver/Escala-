@@ -111,7 +111,7 @@ export function MeusMinisteriosView({ user, userMemberships = [], onRefreshMembe
 
   return (
     <div className="p-5 sm:p-6 lg:p-10 max-w-[1000px] mx-auto w-full animate-in fade-in duration-300">
-      <div className="mb-10">
+      <div className="page-intro  mb-10">
         <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-1">Sua Jornada</p>
         <h1 className="text-3xl sm:text-4xl font-extrabold">Meus Ministérios</h1>
       </div>

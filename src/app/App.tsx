@@ -347,11 +347,13 @@ function AppInner({ account, client }: { account?: OnlineAccount; client?: Supab
 
   return (
     <ErrorBoundary>
-    <div className="flex h-screen w-full bg-background text-foreground font-sans overflow-hidden transition-colors duration-300">
+    <div className={cn("flex h-screen w-full bg-background text-foreground font-sans overflow-hidden transition-colors duration-300", isAdminMode ? "management-shell" : "volunteer-shell")}>
       
       {/* Sidebar - Desktop Only */}
       <aside className="hidden md:flex flex-col w-64 lg:w-72 bg-card border-r border-border h-full flex-shrink-0 z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
-        <div className="h-24 flex items-center px-8 bg-brand-surface border-b-2 border-[var(--personal-highlight,transparent)] cursor-pointer" onClick={() => navigateTo('home')}>
+        <div className={cn("flex h-24 cursor-pointer items-center px-8", isAdminMode
+          ? "border-b border-border bg-card"
+          : "border-b-2 border-[var(--personal-highlight,transparent)] bg-brand-surface")} onClick={() => navigateTo('home')}>
           <div className="flex items-center gap-3">
             <BrandLogo />
           </div>

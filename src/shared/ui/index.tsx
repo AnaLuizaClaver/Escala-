@@ -29,10 +29,10 @@ export function cn(...inputs: ClassValue[]) {
 
 export function Button({ children, variant = 'primary', size = 'md', className, ...props }: any) {
   const variants = {
-    primary: 'bg-primary text-primary-foreground hover:brightness-95 border-transparent shadow-sm',
+    primary: 'action-button bg-primary text-primary-foreground hover:brightness-105 border-foreground',
     secondary: 'bg-secondary text-foreground hover:bg-secondary/80 border-border',
     ghost: 'bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground',
-    outline: 'bg-transparent border-border text-foreground hover:bg-secondary',
+    outline: 'outlined-button bg-card border-border-strong text-foreground hover:bg-secondary',
     destructive: 'bg-destructive/10 text-destructive hover:bg-destructive/20 border-transparent',
   };
   const buttonVariant = variant === 'default' ? 'primary' : variant;
@@ -64,12 +64,13 @@ export function Badge({ children, variant = 'default', className }: any) {
   const variants = {
     default: 'bg-secondary text-foreground',
     primary: 'bg-accent text-accent-foreground',
-    success: 'bg-success/10 text-success',
-    warning: 'bg-warning/10 text-warning',
-    destructive: 'bg-destructive/10 text-destructive',
+    success: 'border border-success/40 bg-success/10 text-success',
+    warning: 'border border-warning/40 bg-warning/10 text-warning',
+    destructive: 'border border-destructive/40 bg-destructive/10 text-destructive',
   };
   return (
-    <span className={cn('px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-semibold whitespace-nowrap', variants[variant as keyof typeof variants], className)}>
+    <span className={cn('inline-flex max-w-full items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-semibold whitespace-nowrap', variants[variant as keyof typeof variants], className)}>
+      {['success', 'warning', 'destructive'].includes(variant) && <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-current" />}
       {children}
     </span>
   );
@@ -88,7 +89,7 @@ export function Card({ children, className, hoverable = false, onClick }: any) {
       whileHover={hoverable ? { y: -4 } : {}}
       transition={{ type: 'spring', stiffness: 300, damping: 20 }}
       className={cn(
-        'bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-sm relative overflow-hidden',
+        'app-card bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-sm relative overflow-hidden',
         hoverable && 'hover:border-primary/50 transition-colors group cursor-pointer hover:shadow-md',
         onClick && 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
         className
@@ -145,7 +146,7 @@ export function Modal({ isOpen, onClose, title, children }: any) {
   }, [isOpen]);
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 app-dialog-overlay bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="absolute inset-0" onClick={onClose}></div>
       <div role="dialog" aria-modal="true" aria-label={title || 'Janela de diálogo'} className="w-full max-w-lg relative z-10">
       <Card className="w-full max-w-lg shadow-2xl relative z-10 animate-in zoom-in-95 duration-200 p-6 sm:p-8">

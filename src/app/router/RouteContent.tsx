@@ -24,7 +24,12 @@ const AdminRelatoriosView = React.lazy(() => import('../../features/relatorios')
 
 export default function RouteContent() {
   const { currentView, navigateTo, setTrocaModalOpen, toggleTheme, isDarkMode, user, userProfile, userMemberships, unreadNotificationsCount, selectedEscala, setSelectedTrocaSlot, setSelectedSongModal, refreshUserData, showLogin, canManage } = useOutletContext<any>();
-  return (<React.Suspense fallback={<div className="p-8 text-sm font-bold text-muted-foreground">Carregando...</div>}>
+  return (<React.Suspense fallback={<div className="mx-auto w-full max-w-[46rem] space-y-4 p-5 sm:p-8" role="status">
+    <span className="sr-only">Carregando tela…</span>
+    <div aria-hidden="true" className="h-20 rounded-2xl bg-secondary motion-safe:animate-pulse" />
+    <div aria-hidden="true" className="h-24 rounded-2xl border border-border bg-card motion-safe:animate-pulse" />
+    <div aria-hidden="true" className="h-24 rounded-2xl border border-border bg-card motion-safe:animate-pulse" />
+  </div>}>
           {currentView === 'home' && (
             <HomeView 
               navigateTo={navigateTo} 
