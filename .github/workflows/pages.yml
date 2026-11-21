@@ -37,6 +37,8 @@ jobs:
           VITE_GOOGLE_AUTH_ENABLED: 'true'
           PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
         run: npm run build -- --base "${PAGES_BASE_PATH%/}/"
+      - name: Serve the app on direct links
+        run: cp dist/index.html dist/404.html
       - name: Name the Pages artifact
         id: artifact
         run: echo "name=github-pages-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"

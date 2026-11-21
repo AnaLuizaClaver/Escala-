@@ -3,12 +3,10 @@ Award,
 Bell,
 Calendar,
 Home,
-LayoutDashboard,ListChecks,
 LogOut,
 MessageSquare,
 Moon,
 Music,
-PieChart,
 Settings,
 ShieldCheck,
 Sun,
@@ -29,6 +27,7 @@ import BrandLogo from '../shared/ui/BrandLogo';
 import { supabase } from '../lib/supabase';
 import { LocalDataNotice } from '../shared/ui/LocalDataNotice';
 import AdminOutlet from './router/AdminOutlet';
+import AdminNavigation from './router/AdminNavigation';
 import RouteContent from './router/RouteContent';
 import { isPublicPath,pathForView,viewForPath } from './router/routes';
 
@@ -318,14 +317,7 @@ function AppInner() {
         <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1.5 custom-scrollbar">
           {isAdminMode ? (
             <>
-              <SidebarItem icon={<LayoutDashboard />} label="Dashboard" active={currentView === 'admin_dashboard'} onClick={() => navigateTo('admin_dashboard')} />
-              <SidebarItem icon={<Users />} label="Ministérios" active={currentView === 'admin_ministerios' || currentView === 'admin_ministerio_detalhes'} onClick={() => navigateTo('admin_ministerios')} />
-              <SidebarItem icon={<Calendar />} label="Escalas" active={currentView === 'admin_escalas' || currentView === 'admin_escala_create'} onClick={() => navigateTo('admin_escalas')} />
-              <SidebarItem icon={<User />} label="Voluntários" active={currentView === 'admin_voluntarios' || currentView === 'admin_voluntario_perfil'} onClick={() => navigateTo('admin_voluntarios')} />
-              <SidebarItem icon={<Music />} label="Repertório" active={currentView === 'admin_repertorio'} onClick={() => navigateTo('admin_repertorio')} />
-              <SidebarItem icon={<ListChecks />} label="Solicitações" active={currentView === 'admin_solicitacoes'} badge={pendingRequestsCount > 0 ? String(pendingRequestsCount) : undefined} onClick={() => navigateTo('admin_solicitacoes')} />
-              <SidebarItem icon={<MessageSquare />} label="Feed" active={currentView === 'admin_feed'} onClick={() => navigateTo('admin_feed')} />
-              <SidebarItem icon={<PieChart />} label="Relatórios" active={currentView === 'admin_relatorios'} onClick={() => navigateTo('admin_relatorios')} />
+              <AdminNavigation currentView={currentView} navigateTo={navigateTo} pendingCount={pendingRequestsCount} />
             </>
           ) : (
             <>
@@ -409,14 +401,7 @@ function AppInner() {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background/90 backdrop-blur-xl border-t border-border z-30 pb-safe" aria-label={isAdminMode ? 'Navegação administrativa' : 'Navegação do voluntário'}>
         <div className="flex justify-around items-center px-2 py-3 overflow-x-auto">
           {isAdminMode ? <>
-            <BottomNavItem icon={<LayoutDashboard />} label="Painel" active={currentView === 'admin_dashboard'} onClick={() => navigateTo('admin_dashboard')} />
-            <BottomNavItem icon={<Users />} label="Ministérios" active={currentView.startsWith('admin_ministerio')} onClick={() => navigateTo('admin_ministerios')} />
-            <BottomNavItem icon={<Calendar />} label="Escalas" active={currentView.startsWith('admin_escala')} onClick={() => navigateTo('admin_escalas')} />
-            <BottomNavItem icon={<User />} label="Pessoas" active={currentView.startsWith('admin_voluntario')} onClick={() => navigateTo('admin_voluntarios')} />
-            <BottomNavItem icon={<ListChecks />} label="Pedidos" active={currentView === 'admin_solicitacoes'} onClick={() => navigateTo('admin_solicitacoes')} />
-            <BottomNavItem icon={<Music />} label="Músicas" active={currentView === 'admin_repertorio'} onClick={() => navigateTo('admin_repertorio')} />
-            <BottomNavItem icon={<MessageSquare />} label="Feed" active={currentView === 'admin_feed'} onClick={() => navigateTo('admin_feed')} />
-            <BottomNavItem icon={<PieChart />} label="Relatórios" active={currentView === 'admin_relatorios'} onClick={() => navigateTo('admin_relatorios')} />
+            <AdminNavigation mobile currentView={currentView} navigateTo={navigateTo} pendingCount={pendingRequestsCount} />
           </> : <>
           <BottomNavItem icon={<Home />} label="Início" active={currentView === 'home'} onClick={() => navigateTo('home')} />
           <BottomNavItem icon={<Calendar />} label="Escalas" active={currentView === 'escalas' || currentView === 'detalhes'} onClick={() => navigateTo('escalas')} />

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { BrowserRouter } from 'react-router';
-import { BellRing, ClipboardList, LogOut, RefreshCw, X } from 'lucide-react';
+import { BellRing, LogOut, RefreshCw, X } from 'lucide-react';
 import AuthLayout from '../../app/AuthLayout';
 import BrandLogo from '../../shared/ui/BrandLogo';
 import { Button } from '../../app/components/ui/button';
@@ -10,6 +10,7 @@ import { avatarUrl, finishAvatar } from './avatar';
 import MinistryCard, { type Ministry, type MinistryLeader } from './MinistryCard';
 import PendingMinistryScreen from './PendingMinistryScreen';
 import { isMinistryOption } from './ministry-options';
+import OnlineAdmin, { type AdminPerson, type Membership } from './OnlineAdmin';
 
 export default function OnlineAccess({ client }: { client: SupabaseClient }) {
   const [session, setSession] = useState<Session | null>();
@@ -24,22 +25,20 @@ export default function OnlineAccess({ client }: { client: SupabaseClient }) {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       {session === undefined ? <AuthLayout><p role="status">Verificando sessão…</p></AuthLayout>
-        : session ? <main className="mx-auto min-h-screen w-full p-5 sm:p-8 lg:w-4/5 lg:px-0">
-          <MinistryAccess key={session.user.id} client={client} userId={session.user.id}
-            requestedMinistry={session.user.user_metadata?.requested_ministry} />
-        </main> : <AuthScreen client={client} />}
+        : session ? <MinistryAccess key={session.user.id} client={client} userId={session.user.id}
+          requestedMinistry={session.user.user_metadata?.requested_ministry} />
+        : <AuthScreen client={client} />}
     </BrowserRouter>
   );
 }
 
-type Membership = { id: string; user_id: string; ministry_id: string; status: 'pending' | 'approved' | 'rejected' };
 type AccessData = {
   profile: { full_name: string; role: string };
   photo?: string;
   ministries: Ministry[];
   leaders: MinistryLeader[];
   memberships: Membership[];
-  applicants: { id: string; full_name: string }[];
+  people: AdminPerson[];
 };
 
 function readDismissedApprovals(userId: string): string[] {
@@ -99,15 +98,14 @@ function MinistryAccess({ client, userId, requestedMinistry }: { client: Supabas
         if (fresh.error) throw fresh.error;
         visibleMemberships = fresh.data;
       }
-      const pendingUsers = [...new Set(visibleMemberships.filter(row => row.status === 'pending').map(row => row.user_id))];
-      const applicants = profile.data.role === 'admin' && pendingUsers.length
-        ? await client.from('profiles').select('id, full_name').in('id', pendingUsers)
+      const people = profile.data.role === 'admin'
+        ? await client.from('profiles').select('id, full_name').order('full_name')
         : { data: [], error: null };
-      if (applicants.error) throw new Error();
+      if (people.error) throw new Error();
       const photo = profile.data.avatar_url === `${userId}/profile` ? await avatarUrl(client, userId) : undefined;
       if (current) {
         setError('');
-        setData({ profile: profile.data, photo, ministries: ministries.data, memberships: visibleMemberships, leaders: leaders.data, applicants: applicants.data });
+        setData({ profile: profile.data, photo, ministries: ministries.data, memberships: visibleMemberships, leaders: leaders.data, people: people.data });
       }
     }
     void load().catch(() => {
@@ -158,8 +156,14 @@ function MinistryAccess({ client, userId, requestedMinistry }: { client: Supabas
       .eq('id', id).eq('status', 'pending').select('id').single());
   }
 
+  if (isAdmin && data) return (
+    <OnlineAdmin name={data.profile.full_name} photo={data.photo} ministries={data.ministries}
+      people={data.people} memberships={data.memberships} busy={busy} error={error} refresh={refresh}
+      signOut={() => void mutate(() => client.auth.signOut(), false)} decide={(id, status) => void decide(id, status)} />
+  );
+
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <main className="mx-auto min-h-screen w-full space-y-6 p-5 sm:space-y-8 sm:p-8 lg:w-4/5 lg:px-0">
       <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-brand-surface px-4 py-2 text-white sm:px-6">
         <BrandLogo />
         <div className="flex gap-2">
@@ -186,7 +190,7 @@ function MinistryAccess({ client, userId, requestedMinistry }: { client: Supabas
           {data.photo && <img className="size-12 rounded-full object-cover" src={data.photo} alt="Sua foto de perfil" />}
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight">Olá, {data.profile.full_name}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">{isAdmin ? 'Conta de administrador' : 'Conta de voluntário'}</p>
+            <p className="mt-1 text-sm text-muted-foreground">Conta de voluntário</p>
           </div>
         </div>
         {!isAdmin && activeMemberships.length === 0 && <section className="max-w-xl space-y-4 rounded-3xl border border-border bg-card p-5">
@@ -223,29 +227,8 @@ function MinistryAccess({ client, userId, requestedMinistry }: { client: Supabas
             </ul>
           </section>
         )}
-          {isAdmin && <section aria-labelledby="requests-heading" className="rounded-3xl border border-border bg-card p-5 shadow-sm">
-            <div className="mb-4 flex items-center gap-2">
-              <ClipboardList size={21} aria-hidden="true" />
-              <h2 id="requests-heading" className="text-lg font-extrabold">Pedidos de entrada</h2>
-              <span className="ml-auto rounded-full bg-muted px-2.5 py-1 text-xs font-bold" aria-label={`${pending.length} pendentes`}>{pending.length}</span>
-            </div>
-            {pending.length === 0 && <p className="rounded-xl bg-muted/60 p-3 text-sm text-muted-foreground">Nenhum pedido pendente.</p>}
-            <ul className="space-y-3">
-              {pending.map(row => (
-                <li key={row.id} className="space-y-3 rounded-xl border border-border p-3">
-                  <div>
-                    <p className="font-bold">{data.applicants.find(person => person.id === row.user_id)?.full_name ?? 'Voluntário'}</p>
-                    <p className="text-sm text-muted-foreground">{data.ministries.find(ministry => ministry.id === row.ministry_id)?.name ?? 'Ministério'}</p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button size="sm" disabled={busy} onClick={() => void decide(row.id, 'approved')}>Aprovar</Button>
-                    <Button size="sm" variant="outline" disabled={busy} onClick={() => void decide(row.id, 'rejected')}>Recusar</Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>}
+
       </>}
-    </div>
+    </main>
   );
 }
