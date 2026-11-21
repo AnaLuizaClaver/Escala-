@@ -10,9 +10,9 @@ ShieldCheck,
 Trash2,
 Users
 } from 'lucide-react';
-import { useEffect,useState } from 'react';
+import { useEffect,useRef,useState } from 'react';
 import { toast } from 'sonner';
-import { getField,hasOnlineTables,previewData,saveData } from '../../mocks/previewData';
+import { getField,hasOnlineTables,previewData,saveData,saveOnlineSchedule } from '../../mocks/previewData';
 
 import { Avatar,Badge,Button,Card,Modal,SectionHeader,cn,formatDatePtBR,formatTimePtBR } from '../../shared/ui';
 
@@ -287,6 +287,8 @@ export function AdminEscalaCreateView({ navigateTo }: any) {
   const [allSongs, setAllSongs] = useState<any[]>([]);
   const [songSearch, setSongSearch] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const submission = useRef<{ id: string; payload: string } | null>(null);
+  const isSaving = useRef(false);
 
   // Form State
   const [selectedMinistryId, setSelectedMinistryId] = useState('');
@@ -401,10 +403,7 @@ export function AdminEscalaCreateView({ navigateTo }: any) {
   };
 
   const handlePublish = async (asDraft = false) => {
-    if (hasOnlineTables() && (slots.length > 0 || selectedSongIds.length > 0)) {
-      toast.error('O cadastro de escalas com vagas e músicas ainda não está disponível online.');
-      return;
-    }
+    if (isSaving.current) return;
     if (!selectedMinistryId) {
       toast.error('Selecione um ministério.');
       return;
@@ -414,46 +413,45 @@ export function AdminEscalaCreateView({ navigateTo }: any) {
       return;
     }
 
+    const status = asDraft ? 'draft' : 'published';
+    const schedule = {
+      ministry_id: selectedMinistryId,
+      title: title.trim() || 'Culto de Celebração',
+      date,
+      start_time: startTime,
+      end_time: endTime || null,
+      location: location.trim() || 'Templo Principal',
+      status,
+    };
+    const memberRows = slots.map(slot => ({
+      role_id: slot.roleId || null,
+      ministry_member_id: slot.memberId || null,
+    }));
+
+    isSaving.current = true;
     setSubmitting(true);
     try {
-      // 1. Inserir Escala
-      const { data: newSchedule, error: sError } = await saveData('schedules', 'insert', {
-          ministry_id: selectedMinistryId,
-          title: title.trim() || 'Culto de Celebração',
-          date: date,
-          start_time: startTime,
-          end_time: endTime || null,
-          location: location.trim() || 'Templo Principal',
-          status: asDraft ? 'draft' : 'published'
-        }, () => true, { single: true, limit: undefined, order: undefined });
-
-      if (sError) throw sError;
-
-      // 2. Inserir Membros da Escala
-      if (slots.length > 0) {
-        const memberRows = slots.map(s => ({
-          schedule_id: newSchedule.id,
-          role_id: s.roleId || null,
-          ministry_member_id: s.memberId || null,
-          response: 'pending'
-        }));
-
-        const { error: smError } = await saveData('schedule_members', 'insert', memberRows, () => true, { single: false, limit: undefined, order: undefined });
-
-        if (smError) throw smError;
-      }
-
-      // 3. Inserir Músicas da Escala
-      if (selectedSongIds.length > 0) {
-        const songRows = selectedSongIds.map((songId, idx) => ({
-          schedule_id: newSchedule.id,
-          song_id: songId,
-          position: idx + 1
-        }));
-
-        const { error: songsError } = await saveData('schedule_songs', 'insert', songRows, () => true, { single: false, limit: undefined, order: undefined });
-
-        if (songsError) throw songsError;
+      if (hasOnlineTables()) {
+        const payload = JSON.stringify([schedule, memberRows, selectedSongIds]);
+        if (submission.current?.payload !== payload) {
+          submission.current = { id: crypto.randomUUID(), payload };
+        }
+        await saveOnlineSchedule({ ...schedule, status, id: submission.current.id }, memberRows, selectedSongIds);
+      } else {
+        const { data, error } = await saveData('schedules', 'insert', schedule, undefined, { single: true });
+        if (error) throw error;
+        if (memberRows.length > 0) {
+          const { error: slotError } = await saveData('schedule_members', 'insert', memberRows.map(row => ({
+            ...row, schedule_id: data.id, response: 'pending',
+          })));
+          if (slotError) throw slotError;
+        }
+        if (selectedSongIds.length > 0) {
+          const { error: songError } = await saveData('schedule_songs', 'insert', selectedSongIds.map((songId, index) => ({
+            schedule_id: data.id, song_id: songId, position: index + 1,
+          })));
+          if (songError) throw songError;
+        }
       }
 
       toast.success(asDraft ? 'Escala salva como rascunho!' : 'Escala publicada com sucesso!');
@@ -462,6 +460,7 @@ export function AdminEscalaCreateView({ navigateTo }: any) {
       console.error('Erro ao salvar escala:', err);
       toast.error('Erro ao criar escala: ' + err.message);
     } finally {
+      isSaving.current = false;
       setSubmitting(false);
     }
   };

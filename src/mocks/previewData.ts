@@ -66,6 +66,38 @@ export function attachOnlineTables(client: SupabaseClient, tables: DataSource['t
 export function hasOnlineTables() {
   return onlineSource !== undefined;
 }
+
+type NewSchedule = {
+  id: string;
+  ministry_id: string;
+  title: string;
+  date: string;
+  start_time: string;
+  end_time: string | null;
+  location: string;
+  status: 'draft' | 'published';
+};
+
+export async function saveOnlineSchedule(
+  schedule: NewSchedule,
+  slots: { role_id: string | null; ministry_member_id: string | null }[],
+  songIds: string[],
+) {
+  const source = onlineSource;
+  if (!source) throw new Error('A conexão com o banco está indisponível.');
+  const { data, error } = await source.client.rpc('create_schedule_with_slots', {
+    p_schedule: schedule,
+    p_slots: slots,
+    p_song_ids: songIds,
+  });
+  if (error) throw error;
+  if (source !== onlineSource) return;
+
+  source.tables.schedules = source.tables.schedules.filter(row => row.id !== schedule.id).concat(data.schedule);
+  source.tables.schedule_members = source.tables.schedule_members.filter(row => row.schedule_id !== schedule.id).concat(data.slots);
+  source.tables.schedule_songs = source.tables.schedule_songs.filter(row => row.schedule_id !== schedule.id).concat(data.songs);
+  usePreviewDataRevision.getState().changed();
+}
 export const localDataProblem = () => localData.problem;
 export const exportLocalData = () => localData.backup();
 function expand(collection: string, row: PreviewRow, depth = 0): PreviewRow {
