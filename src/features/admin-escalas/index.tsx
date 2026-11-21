@@ -12,7 +12,7 @@ Users
 } from 'lucide-react';
 import { useEffect,useState } from 'react';
 import { toast } from 'sonner';
-import { getField,previewData } from '../../mocks/previewData';
+import { getField,hasOnlineTables,previewData,saveData } from '../../mocks/previewData';
 
 import { Avatar,Badge,Button,Card,Modal,SectionHeader,cn,formatDatePtBR,formatTimePtBR } from '../../shared/ui';
 
@@ -54,7 +54,7 @@ export function AdminEscalasView({ navigateTo }: any) {
   const handleTogglePublish = async (scheduleId: string, currentStatus: string) => {
     const nextStatus = currentStatus === 'published' ? 'draft' : 'published';
     try {
-      const { error } = previewData('schedules', 'update', { status: nextStatus }, (row: any) => getField(row, 'id') === scheduleId, { single: false, limit: undefined, order: undefined });
+      const { error } = await saveData('schedules', 'update', { status: nextStatus }, (row: any) => getField(row, 'id') === scheduleId, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
 
@@ -68,7 +68,7 @@ export function AdminEscalasView({ navigateTo }: any) {
   const handleDeleteSchedule = async (scheduleId: string) => {
     if (!confirm('Tem certeza que deseja excluir esta escala?')) return;
     try {
-      const { error } = previewData('schedules', 'delete', undefined, (row: any) => getField(row, 'id') === scheduleId, { single: false, limit: undefined, order: undefined });
+      const { error } = await saveData('schedules', 'delete', undefined, (row: any) => getField(row, 'id') === scheduleId, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
 
@@ -401,6 +401,10 @@ export function AdminEscalaCreateView({ navigateTo }: any) {
   };
 
   const handlePublish = async (asDraft = false) => {
+    if (hasOnlineTables() && (slots.length > 0 || selectedSongIds.length > 0)) {
+      toast.error('O cadastro de escalas com vagas e músicas ainda não está disponível online.');
+      return;
+    }
     if (!selectedMinistryId) {
       toast.error('Selecione um ministério.');
       return;
@@ -413,7 +417,7 @@ export function AdminEscalaCreateView({ navigateTo }: any) {
     setSubmitting(true);
     try {
       // 1. Inserir Escala
-      const { data: newSchedule, error: sError } = previewData('schedules', 'insert', {
+      const { data: newSchedule, error: sError } = await saveData('schedules', 'insert', {
           ministry_id: selectedMinistryId,
           title: title.trim() || 'Culto de Celebração',
           date: date,
@@ -434,7 +438,7 @@ export function AdminEscalaCreateView({ navigateTo }: any) {
           response: 'pending'
         }));
 
-        const { error: smError } = previewData('schedule_members', 'insert', memberRows, () => true, { single: false, limit: undefined, order: undefined });
+        const { error: smError } = await saveData('schedule_members', 'insert', memberRows, () => true, { single: false, limit: undefined, order: undefined });
 
         if (smError) throw smError;
       }
@@ -447,7 +451,7 @@ export function AdminEscalaCreateView({ navigateTo }: any) {
           position: idx + 1
         }));
 
-        const { error: songsError } = previewData('schedule_songs', 'insert', songRows, () => true, { single: false, limit: undefined, order: undefined });
+        const { error: songsError } = await saveData('schedule_songs', 'insert', songRows, () => true, { single: false, limit: undefined, order: undefined });
 
         if (songsError) throw songsError;
       }

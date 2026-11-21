@@ -18,7 +18,7 @@ Users
 import React,{ useEffect,useState } from 'react';
 import { toast } from 'sonner';
 import { usePreview } from '../../hooks/usePreview';
-import { getField,previewData } from '../../mocks/previewData';
+import { getField,previewData,saveData } from '../../mocks/previewData';
 
 import { Avatar,Button,Card,Modal,SectionHeader,cn,getMinistryIconComponent } from '../../shared/ui';
 
@@ -118,7 +118,7 @@ export function PerfilView({
     if (!user?.id) return;
     setSavingAvailability(true);
     try {
-      const { error } = previewData('profiles', 'update', {
+      const { error } = await saveData('profiles', 'update', {
           availability,
           updated_at: new Date().toISOString()
         }, (row: any) => getField(row, 'id') === user.id, { single: false, limit: undefined, order: undefined });
@@ -138,7 +138,7 @@ export function PerfilView({
     if (!user?.id) return;
     setSavingProfile(true);
     try {
-      const { error } = previewData('profiles', 'update', {
+      const { error } = await saveData('profiles', 'update', {
           full_name: fullName.trim(),
           phone: phone.trim() || null,
           birth_date: birthDate || null,
@@ -460,7 +460,7 @@ export function ConfiguracoesView({ toggleTheme, isDarkMode, navigateTo, user, u
     if (!user?.id) return;
     setSavingAccount(true);
     try {
-      const { error } = previewData('profiles', 'update', {
+      const { error } = await saveData('profiles', 'update', {
           full_name: cfgFullName.trim(),
           phone: cfgPhone.trim() || null,
           updated_at: new Date().toISOString()

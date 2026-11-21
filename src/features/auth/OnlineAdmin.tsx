@@ -1,4 +1,4 @@
-import { ClipboardList, LogOut, RefreshCw, ShieldCheck, UsersRound } from 'lucide-react';
+import { ArrowLeft, ClipboardList, LogOut, RefreshCw, ShieldCheck, UsersRound } from 'lucide-react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 import AdminNavigation, { adminNavigation } from '../../app/router/AdminNavigation';
 import { pathForView, viewForPath, type View } from '../../app/router/routes';
@@ -59,7 +59,10 @@ export default function OnlineAdmin({ name, photo, ministries, people, membershi
               <h1 className="text-3xl font-extrabold tracking-tight">{section.label}</h1>
               {currentView === 'admin_dashboard' && <p className="mt-1 text-muted-foreground">Olá, {name.split(' ')[0]}!</p>}
             </div>
-            <Button variant="outline" disabled={busy} onClick={refresh}><RefreshCw size={16} aria-hidden="true" /> Atualizar</Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => navigateTo('home')}><ArrowLeft size={16} aria-hidden="true" /> Voltar ao app</Button>
+              <Button variant="outline" disabled={busy} onClick={refresh}><RefreshCw size={16} aria-hidden="true" /> Atualizar</Button>
+            </div>
           </div>
           {error && <p role="alert" className="rounded-xl bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
           {currentView === 'admin_dashboard' && (

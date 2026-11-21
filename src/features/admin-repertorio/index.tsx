@@ -14,7 +14,7 @@ Video
 } from 'lucide-react';
 import React,{ useEffect,useState } from 'react';
 import { toast } from 'sonner';
-import { getField,previewData } from '../../mocks/previewData';
+import { getField,previewData,saveData } from '../../mocks/previewData';
 
 import { Badge,Button,Card,Modal,cn,formatDatePtBR,formatTimePtBR } from '../../shared/ui';
 
@@ -121,11 +121,11 @@ export function AdminRepertorioView() {
       };
 
       if (editingSongId) {
-        const { error } = previewData('songs', 'update', payload, (row: any) => getField(row, 'id') === editingSongId, { single: false, limit: undefined, order: undefined });
+        const { error } = await saveData('songs', 'update', payload, (row: any) => getField(row, 'id') === editingSongId, { single: false, limit: undefined, order: undefined });
         if (error) throw error;
         toast.success('Música atualizada com sucesso!');
       } else {
-        const { error } = previewData('songs', 'insert', payload, () => true, { single: false, limit: undefined, order: undefined });
+        const { error } = await saveData('songs', 'insert', payload, () => true, { single: false, limit: undefined, order: undefined });
         if (error) throw error;
         toast.success('Música cadastrada no acervo!');
       }
@@ -145,7 +145,7 @@ export function AdminRepertorioView() {
     if (!window.confirm('Tem certeza que deseja remover esta música do acervo geral?')) return;
 
     try {
-      const { error } = previewData('songs', 'delete', undefined, (row: any) => getField(row, 'id') === songId, { single: false, limit: undefined, order: undefined });
+      const { error } = await saveData('songs', 'delete', undefined, (row: any) => getField(row, 'id') === songId, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
       toast.success('Música removida do acervo.');
@@ -170,7 +170,7 @@ export function AdminRepertorioView() {
 
     try {
       const nextPos = currentSongs.length + 1;
-      const { error } = previewData('schedule_songs', 'insert', {
+      const { error } = await saveData('schedule_songs', 'insert', {
           schedule_id: selectedSchedule.id,
           song_id: song.id,
           position: nextPos
@@ -186,7 +186,7 @@ export function AdminRepertorioView() {
 
   const handleRemoveSongFromSchedule = async (scheduleSongId: string) => {
     try {
-      const { error } = previewData('schedule_songs', 'delete', undefined, (row: any) => getField(row, 'id') === scheduleSongId, { single: false, limit: undefined, order: undefined });
+      const { error } = await saveData('schedule_songs', 'delete', undefined, (row: any) => getField(row, 'id') === scheduleSongId, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
       toast.success('Música removida da escala.');

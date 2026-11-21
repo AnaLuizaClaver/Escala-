@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 // Exemplos iniciais. Dados da interface React persistem neste navegador.
 import { createLocalData } from '../shared/state/localData.ts';
 import { usePreviewDataRevision } from '../shared/state/dataRevision.ts';
@@ -29,7 +30,42 @@ const seed: Record<string, PreviewRow[]> = {
 let browserStorage: Storage | undefined;
 try { if (typeof window !== 'undefined') browserStorage = window.localStorage; } catch { /* Mostra aviso sem sobrescrever dados. */ }
 const localData = createLocalData(browserStorage, seed);
-const items = localData.tables as Record<string, PreviewRow[]>;
+const localItems = localData.tables as Record<string, PreviewRow[]>;
+type DataSource = { client: SupabaseClient; tables: Record<string, PreviewRow[]> };
+let onlineSource: DataSource | undefined;
+let items = localItems;
+
+export async function loadOnlineTables(client: SupabaseClient, signal: AbortSignal) {
+  const tables = await Promise.all(Object.keys(seed).map(async collection => {
+    const rows: PreviewRow[] = [];
+    const pageSize = 500;
+    for (let offset = 0; ; offset += pageSize) {
+      const page = await client.from(collection).select('*').order('id')
+        .range(offset, offset + pageSize - 1).abortSignal(signal);
+      if (page.error) throw page.error;
+      rows.push(...page.data);
+      if (page.data.length < pageSize) return [collection, rows] as const;
+    }
+  }));
+  const leaders = await client.rpc('ministry_leader_names').abortSignal(signal);
+  if (leaders.error) throw leaders.error;
+  return { ...Object.fromEntries(tables), ministry_leaders: leaders.data };
+}
+
+export function attachOnlineTables(client: SupabaseClient, tables: DataSource['tables']) {
+  const source = { client, tables };
+  onlineSource = source;
+  items = tables;
+  return () => {
+    if (onlineSource !== source) return;
+    onlineSource = undefined;
+    items = localItems;
+  };
+}
+
+export function hasOnlineTables() {
+  return onlineSource !== undefined;
+}
 export const localDataProblem = () => localData.problem;
 export const exportLocalData = () => localData.backup();
 function expand(collection: string, row: PreviewRow, depth = 0): PreviewRow {
@@ -74,6 +110,9 @@ function removeRelated(collection: string, id: string) {
   }
 }
 export function previewData(collection: string, action = 'read', payload?: any, matches: (row: PreviewRow) => boolean = () => true, options: { single?: boolean; limit?: number; order?: any } = {}): { data: any; error: any; count: number } {
+  if (action !== 'read' && onlineSource) {
+    return { data: null, error: new Error('A ação precisa ser salva no servidor.'), count: 0 };
+  }
   const before = action === 'read' ? null : structuredClone(items);
   const list = items[collection] ||= [];
   let selected = list.filter(row => matches(expand(collection, row)));
@@ -85,7 +124,7 @@ export function previewData(collection: string, action = 'read', payload?: any, 
     for (const row of selected) removeRelated(collection, row.id);
     items[collection] = list.filter(row => !selected.includes(row));
   }
-  if ((action === 'update' || action === 'delete') && selected.length === 0) return { data: options.single ? null : [], error: new Error('Registro não encontrado.'), count: 0 };
+  if ((action === 'update' || action === 'delete') && selected.length === 0) return { data: options.single ? null : [], error: new Error('Registro nÃ£o encontrado.'), count: 0 };
   if (before && typeof window !== 'undefined') {
     const error = localData.commit(items);
     if (error) {
@@ -104,4 +143,52 @@ export function previewData(collection: string, action = 'read', payload?: any, 
   if (options.limit !== undefined) data = data.slice(0, options.limit);
   if (action !== 'read' && count > 0) usePreviewDataRevision.getState().changed();
   return { data: options.single ? data[0] || null : data, error: null, count };
+}
+
+
+export async function saveData(
+  collection: string,
+  action: 'insert' | 'update' | 'delete',
+  payload?: any,
+  matches: (row: PreviewRow) => boolean = () => true,
+  options: Parameters<typeof previewData>[4] = {},
+): Promise<ReturnType<typeof previewData>> {
+  const source = onlineSource;
+  if (!source) return previewData(collection, action, payload, matches, options);
+  const failed = (error: unknown) => ({ data: null, error, count: 0 });
+  const table = source.client.from(collection);
+  let query;
+  if (collection === 'schedule_members' && payload && 'response_at' in payload) {
+    const { response_at, ...fields } = payload;
+    payload = fields;
+  }
+
+  if (action === 'insert') {
+    query = table.insert(payload).select();
+  } else {
+    const selected = source.tables[collection].filter(row => matches(expand(collection, row)));
+    // The current screens edit one record at a time.
+    if (selected.length !== 1) return failed(new Error('Registro indisponível ou alterado.'));
+    const [record] = selected;
+    let change = (action === 'update' ? table.update(payload) : table.delete()).eq('id', record.id);
+    if (record.status) change = change.eq('status', record.status);
+    if (collection === 'schedule_members') {
+      change = record.ministry_member_id === null
+        ? change.is('ministry_member_id', null)
+        : change.eq('ministry_member_id', record.ministry_member_id);
+      change = change.eq('response', record.response);
+    }
+    query = change.select();
+  }
+
+  const { data, error } = await query;
+  if (error) return failed(error);
+  if (!data.length) return failed(new Error('Registro indisponível ou alterado.'));
+  if (onlineSource === source) {
+    const changedIds = new Set(data.map(row => row.id));
+    const remaining = source.tables[collection].filter(row => !changedIds.has(row.id));
+    source.tables[collection] = action === 'delete' ? remaining : remaining.concat(data);
+    usePreviewDataRevision.getState().changed();
+  }
+  return { data: options.single ? data[0] : data, error: null, count: data.length };
 }

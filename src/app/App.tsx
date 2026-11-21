@@ -19,11 +19,13 @@ import { BrowserRouter,Navigate,Outlet,Route,Routes,useLocation,useNavigate } fr
 import { Toaster,toast } from 'sonner';
 import { PreviewProvider } from '../context/PreviewContext';
 import { usePreview } from '../hooks/usePreview';
-import { getField,previewData } from '../mocks/previewData';
+import { attachOnlineTables,getField,loadOnlineTables,previewData } from '../mocks/previewData';
 import { usePreviewDataRevision } from '../shared/state/dataRevision';
 import LoginView from './LoginView';
 import AuthLayout from './AuthLayout';
 import BrandLogo from '../shared/ui/BrandLogo';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { OnlineAccount } from '../features/auth/OnlineAccess';
 import { supabase } from '../lib/supabase';
 import { LocalDataNotice } from '../shared/ui/LocalDataNotice';
 import AdminOutlet from './router/AdminOutlet';
@@ -61,27 +63,60 @@ class ErrorBoundary extends React.Component<any, { hasError: boolean; error?: an
 }
 
 export default function App() {
-  if (supabase) {
+  const client = supabase;
+  if (client) {
     return (
       <React.Suspense fallback={<p role="status" className="p-6">Carregando acesso…</p>}>
-        <OnlineAccess client={supabase} />
+        <OnlineAccess client={client} renderApp={account => <ConnectedApp client={client} account={account} />} />
       </React.Suspense>
     );
   }
 
-  return (
-    <BrowserRouter><LocalDataNotice /><PreviewProvider><Routes><Route path="/" element={<AppInner />}><Route index element={<Navigate to="/inicio" replace />} /><Route path="inicio" element={<RouteContent />} /><Route path="escalas" element={<RouteContent />} /><Route path="escalas/nova" element={<RouteContent />} /><Route path="escalas/:id" element={<RouteContent />} /><Route path="repertorio" element={<RouteContent />} /><Route path="feed" element={<RouteContent />} /><Route path="ministerios" element={<RouteContent />} /><Route path="conquistas" element={<RouteContent />} /><Route path="notificacoes" element={<RouteContent />} /><Route path="perfil" element={<RouteContent />} /><Route path="configuracoes" element={<RouteContent />} /><Route path="admin" element={<AdminOutlet />}><Route index element={<RouteContent />} /><Route path="ministerios" element={<RouteContent />} /><Route path="ministerios/:id" element={<RouteContent />} /><Route path="escalas" element={<RouteContent />} /><Route path="escalas/nova" element={<RouteContent />} /><Route path="voluntarios" element={<RouteContent />} /><Route path="voluntarios/:id" element={<RouteContent />} /><Route path="solicitacoes" element={<RouteContent />} /><Route path="repertorio" element={<RouteContent />} /><Route path="feed" element={<RouteContent />} /><Route path="relatorios" element={<RouteContent />} /></Route><Route path="login" element={<RouteContent />} /><Route path="cadastro" element={<RouteContent />} /><Route path="recuperar-senha" element={<RouteContent />} /><Route path="escolher-ministerio" element={<RouteContent />} /><Route path="aguardando-aprovacao" element={<RouteContent />} /><Route path="*" element={<Navigate to="/inicio" replace />} /></Route></Routes></PreviewProvider></BrowserRouter>
-  )
+  return <BrowserRouter basename={import.meta.env.BASE_URL}><LocalDataNotice /><PreviewProvider><AppRoutes /></PreviewProvider></BrowserRouter>;
 }
 
-function AppInner() {
+function ConnectedApp({ client, account }: { client: SupabaseClient; account: OnlineAccount }) {
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let detach: (() => void) | undefined;
+    loadOnlineTables(client, controller.signal).then(tables => {
+      if (controller.signal.aborted) return;
+      detach = attachOnlineTables(client, tables);
+      setStatus('ready');
+    }).catch(() => {
+      if (!controller.signal.aborted) setStatus('error');
+    });
+    return () => {
+      controller.abort();
+      detach?.();
+    };
+  }, [client, attempt]);
+
+  if (status === 'ready') return <AppRoutes account={account} client={client} />;
+  return <AuthLayout>
+    {status === 'loading' ? <p role="status">Carregando o Escalaê…</p> : <>
+      <p role="alert">Não foi possível carregar os dados do Escalaê.</p>
+      <Button onClick={() => { setStatus('loading'); setAttempt(value => value + 1); }}>Tentar novamente</Button>
+      <Button variant="ghost" onClick={() => void client.auth.signOut()}>Sair</Button>
+    </>}
+  </AuthLayout>;
+}
+
+function AppRoutes({ account, client }: { account?: OnlineAccount; client?: SupabaseClient }) {
+  return <Routes><Route path="/" element={<AppInner account={account} client={client} />}><Route index element={<Navigate to="/inicio" replace />} /><Route path="inicio" element={<RouteContent />} /><Route path="escalas" element={<RouteContent />} /><Route path="escalas/nova" element={<RouteContent />} /><Route path="escalas/:id" element={<RouteContent />} /><Route path="repertorio" element={<RouteContent />} /><Route path="feed" element={<RouteContent />} /><Route path="ministerios" element={<RouteContent />} /><Route path="conquistas" element={<RouteContent />} /><Route path="notificacoes" element={<RouteContent />} /><Route path="perfil" element={<RouteContent />} /><Route path="configuracoes" element={<RouteContent />} /><Route path="admin" element={<AdminOutlet />}><Route index element={<RouteContent />} /><Route path="ministerios" element={<RouteContent />} /><Route path="ministerios/:id" element={<RouteContent />} /><Route path="escalas" element={<RouteContent />} /><Route path="escalas/nova" element={<RouteContent />} /><Route path="voluntarios" element={<RouteContent />} /><Route path="voluntarios/:id" element={<RouteContent />} /><Route path="solicitacoes" element={<RouteContent />} /><Route path="repertorio" element={<RouteContent />} /><Route path="feed" element={<RouteContent />} /><Route path="relatorios" element={<RouteContent />} /></Route><Route path="login" element={<RouteContent />} /><Route path="cadastro" element={<RouteContent />} /><Route path="recuperar-senha" element={<RouteContent />} /><Route path="escolher-ministerio" element={<RouteContent />} /><Route path="aguardando-aprovacao" element={<RouteContent />} /><Route path="*" element={<Navigate to="/inicio" replace />} /></Route></Routes>;
+}
+
+function AppInner({ account, client }: { account?: OnlineAccount; client?: SupabaseClient }) {
   const dataRevision = usePreviewDataRevision(state => state.revision);
   const pendingRequestsCount = previewData('ministry_members', 'read', undefined, row => row.status === 'pending').count + previewData('schedule_swap_requests', 'read', undefined, row => row.status === 'pending').count;
   const [isDarkMode, setIsDarkMode] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
   const currentView = viewForPath(location.pathname);
-  const isAdminMode = location.pathname.startsWith('/admin');
+  const isAdminMode = location.pathname === '/admin' || location.pathname.startsWith('/admin/');
   const routeId = decodeURIComponent(location.pathname.split('/').slice(-1)[0] || '');
   const detailCollection = currentView === 'admin_ministerio_detalhes' ? 'ministries' : currentView === 'admin_voluntario_perfil' ? 'profiles' : 'schedules';
   const selectedEscala = (['detalhes', 'admin_ministerio_detalhes', 'admin_voluntario_perfil'].includes(currentView) ? previewData(detailCollection, 'read', undefined, row => row.id === routeId, { single: true }).data : null) || location.state?.selected;
@@ -110,7 +145,15 @@ function AppInner() {
 
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
 
-  const { showApp, user, showLogin } = usePreview()
+  const preview = usePreview();
+  const showApp = Boolean(account) || preview.showApp;
+  const user = account?.session.user ?? preview.user;
+  const canManage = account?.isAdmin ?? true;
+  const showLogin = async () => {
+    if (!client) return preview.showLogin();
+    const { error } = await client.auth.signOut();
+    if (error) throw error;
+  };
   const previousShowApp = React.useRef(showApp);
   useEffect(() => {
     if (previousShowApp.current !== showApp) {
@@ -142,7 +185,7 @@ function AppInner() {
         const { data: profile } = previewData('profiles', 'read', undefined, (row: any) => getField(row, 'id') === user!.id, { single: true, limit: undefined, order: undefined })
 
         if (isMounted && profile) {
-          setUserProfile(profile)
+          setUserProfile(account ? { ...profile, avatar_url: account.photo } : profile)
         }
 
         const { data: memberships } = previewData('ministry_members', 'read', undefined, (row: any) => getField(row, 'user_id') === user!.id, { single: false, limit: undefined, order: undefined })
@@ -173,13 +216,13 @@ function AppInner() {
     return () => {
       isMounted = false
     }
-  }, [user?.id, dataRevision])
+  }, [user?.id, dataRevision, account?.photo])
 
   const refreshUserData = async () => {
     if (!user?.id) return
     try {
       const { data: profile } = previewData('profiles', 'read', undefined, (row: any) => getField(row, 'id') === user.id, { single: true, limit: undefined, order: undefined })
-      if (profile) setUserProfile(profile)
+      if (profile) setUserProfile(account ? { ...profile, avatar_url: account.photo } : profile)
 
       const { data: memberships } = previewData('ministry_members', 'read', undefined, (row: any) => getField(row, 'user_id') === user.id, { single: false, limit: undefined, order: undefined })
 
@@ -238,7 +281,7 @@ function AppInner() {
   const hasApprovedMinistry = userMemberships.some((m: any) => m.status === 'approved')
   const hasPendingMinistry = userMemberships.some((m: any) => m.status === 'pending')
 
-  if (!hasApprovedMinistry && userMemberships.length === 0 && authMode !== 'pending_approval') {
+  if (!account && !hasApprovedMinistry && userMemberships.length === 0 && authMode !== 'pending_approval') {
     return (
       <div className="flex min-h-screen w-full bg-background text-foreground font-sans overflow-hidden transition-colors duration-300">
         <div className="flex-1 flex flex-col relative overflow-y-auto custom-scrollbar p-6 sm:p-12">
@@ -263,7 +306,7 @@ function AppInner() {
     )
   }
 
-  if (!hasApprovedMinistry && (hasPendingMinistry || authMode === 'pending_approval')) {
+  if (!account && !hasApprovedMinistry && (hasPendingMinistry || authMode === 'pending_approval')) {
     return (
       <div className="flex min-h-screen w-full bg-background text-foreground font-sans overflow-hidden transition-colors duration-300">
         <div className="flex-1 flex flex-col relative overflow-y-auto custom-scrollbar p-6 sm:p-12">
@@ -344,16 +387,19 @@ function AppInner() {
           )}
         </nav>
 
-        <div className="p-4 border-t border-border/50 bg-background/30 backdrop-blur-sm">
+        <div className="space-y-2 p-4 border-t border-border/50 bg-background/30 backdrop-blur-sm">
+          {canManage && <Button variant="outline" className="w-full" onClick={() => navigateTo(isAdminMode ? 'home' : 'admin_dashboard')}>
+            <ShieldCheck className="size-4" /> {isAdminMode ? 'Voltar ao app' : 'Modo Admin'}
+          </Button>}
           <div 
-            onClick={() => { navigateTo(isAdminMode ? 'home' : 'admin_dashboard'); }}
+            onClick={() => { navigateTo('perfil'); }}
             className={cn(
               "flex items-center gap-3 px-4 py-3.5 rounded-2xl cursor-pointer transition-colors border",
               isAdminMode ? "bg-primary/10 border-primary text-primary hover:bg-primary/20" : "bg-transparent border-transparent hover:bg-secondary hover:border-border"
             )}
           >
             <Avatar 
-              src={userProfile?.avatar_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&auto=format"} 
+              src={userProfile?.avatar_url}
               alt={userProfile?.full_name || "Perfil"} 
               size="md"
               fallback={userProfile?.full_name ? userProfile.full_name.charAt(0) : (user?.email?.charAt(0).toUpperCase() || "U")}
@@ -383,17 +429,17 @@ function AppInner() {
             <BrandLogo />
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigateTo(isAdminMode ? 'home' : 'admin_dashboard')} aria-label={isAdminMode ? 'Abrir área do voluntário' : 'Abrir administração'}>
-              {isAdminMode ? 'Voluntário' : 'Admin'}
-            </Button>
+            {canManage && <Button variant="ghost" size="sm" onClick={() => navigateTo(isAdminMode ? 'home' : 'admin_dashboard')} aria-label={isAdminMode ? 'Abrir área do voluntário' : 'Abrir administração'}>
+              {isAdminMode ? 'Voltar ao app' : 'Modo Admin'}
+            </Button>}
             <Button variant="ghost" size="icon" onClick={toggleTheme}>
               {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </Button>
           </div>
         </header>
 
-        <div key={dataRevision} className="flex-1 overflow-y-auto custom-scrollbar pb-24 md:pb-6">
-          <Outlet context={{ currentView, navigateTo, setTrocaModalOpen, toggleTheme, isDarkMode, user, userProfile, userMemberships, unreadNotificationsCount, selectedEscala, setSelectedTrocaSlot, setSelectedSongModal, refreshUserData, showLogin }} />
+        <div key={account ? undefined : dataRevision} className="flex-1 overflow-y-auto custom-scrollbar pb-24 md:pb-6">
+          <Outlet context={{ currentView, navigateTo, setTrocaModalOpen, toggleTheme, isDarkMode, user, userProfile, userMemberships, unreadNotificationsCount, selectedEscala, setSelectedTrocaSlot, setSelectedSongModal, refreshUserData, showLogin, canManage: account?.isAdmin === true }} />
         </div>
       </main>
 
@@ -407,6 +453,7 @@ function AppInner() {
           <BottomNavItem icon={<Calendar />} label="Escalas" active={currentView === 'escalas' || currentView === 'detalhes'} onClick={() => navigateTo('escalas')} />
           <BottomNavItem icon={<MessageSquare />} label="Feed" active={currentView === 'feed'} onClick={() => navigateTo('feed')} />
           <BottomNavItem icon={<Music />} label="Repertório" active={currentView === 'repertorio'} onClick={() => navigateTo('repertorio')} />
+          <BottomNavItem icon={<Users />} label="Ministérios" active={currentView === 'ministerios'} onClick={() => navigateTo('ministerios')} />
           <BottomNavItem icon={<User />} label="Perfil" active={currentView === 'perfil' || currentView === 'conquistas'} onClick={() => navigateTo('perfil')} />
           </>}
         </div>

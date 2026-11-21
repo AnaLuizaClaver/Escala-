@@ -9,12 +9,15 @@ Trash2,
 Users
 } from 'lucide-react';
 import React,{ useEffect,useState } from 'react';
+import { useSearchParams } from 'react-router';
+import MinistryCard from '../auth/MinistryCard';
+import { isMinistryOption } from '../auth/ministry-options';
 import { toast } from 'sonner';
-import { getField,previewData } from '../../mocks/previewData';
+import { getField,hasOnlineTables,previewData,saveData } from '../../mocks/previewData';
 
 import { Avatar,Badge,Button,Card,Modal,SectionHeader,cn,formatDatePtBR,formatTimePtBR,getMinistryIconComponent } from '../../shared/ui';
 
-export function MeusMinisteriosView({ user, userMemberships = [], onRefreshMemberships }: any) {
+export function MeusMinisteriosView({ user, userMemberships = [], onRefreshMemberships, canManage }: any) {
   const [modalOpen, setModalOpen] = useState(false);
   const [allMinistries, setAllMinistries] = useState<any[]>([]);
   const [selectedMinistryId, setSelectedMinistryId] = useState('');
@@ -22,10 +25,20 @@ export function MeusMinisteriosView({ user, userMemberships = [], onRefreshMembe
   const [loading, setLoading] = useState(false);
 
   const approvedMinistries = userMemberships.filter((m: any) => m.status === 'approved');
+  const [query, setQuery] = useSearchParams();
+  const online = hasOnlineTables();
+  const ministries = previewData('ministries').data;
+  const visibleMinistries = ministries.filter((ministry: any) => ministry.active && (
+    canManage || approvedMinistries.some((membership: any) => membership.ministry_id === ministry.id)
+  ));
+  const opened = visibleMinistries.find((ministry: any) => ministry.id === query.get('ministerio'));
+  const leaders = previewData('ministry_leaders').data;
+  const leadersFor = (id: string) => leaders.filter((leader: any) => leader.ministry_id === id);
+  const isJoinable = (ministry: any) => !online || (ministry.active && isMinistryOption(ministry.name));
   const pendingMinistries = userMemberships.filter((m: any) => m.status === 'pending');
 
   const existingMinistryIds = userMemberships.map((m: any) => m.ministry_id);
-  const availableToJoin = allMinistries.filter((min: any) => !existingMinistryIds.includes(min.id));
+  const availableToJoin = allMinistries.filter((min: any) => isJoinable(min) && !existingMinistryIds.includes(min.id));
 
   const handleOpenModal = async () => {
     setModalOpen(true);
@@ -33,7 +46,7 @@ export function MeusMinisteriosView({ user, userMemberships = [], onRefreshMembe
     try {
       const { data } = previewData('ministries', 'read', undefined, () => true, { single: false, limit: undefined, order: ['name', {}] });
       setAllMinistries(data || []);
-      const available = (data || []).filter((min: any) => !existingMinistryIds.includes(min.id));
+      const available = (data || []).filter((min: any) => isJoinable(min) && !existingMinistryIds.includes(min.id));
       if (available.length > 0) {
         setSelectedMinistryId(available[0].id);
       }
@@ -53,7 +66,7 @@ export function MeusMinisteriosView({ user, userMemberships = [], onRefreshMembe
 
     setSubmitting(true);
     try {
-      const { error } = previewData('ministry_members', 'insert', {
+      const { error } = await saveData('ministry_members', 'insert', {
           user_id: user.id,
           ministry_id: selectedMinistryId,
           role: 'volunteer',
@@ -74,6 +87,28 @@ export function MeusMinisteriosView({ user, userMemberships = [], onRefreshMembe
     }
   };
 
+  if (opened) return (
+    <div className="mx-auto w-full max-w-[1000px] space-y-6 p-5 sm:p-10">
+      <Button variant="ghost" onClick={() => setQuery({})}><ChevronLeft className="size-4" /> Ministérios</Button>
+      <Card className="space-y-4 rounded-3xl p-6">
+        <h1 className="text-3xl font-extrabold">{opened.name}</h1>
+        {opened.description && <p className="text-muted-foreground">{opened.description}</p>}
+        <div>
+          <h2 className="font-bold">Liderança</h2>
+          <p className="text-muted-foreground">{leadersFor(opened.id).map((leader: any) => leader.full_name).join(', ') || 'Liderança ainda não informada'}</p>
+        </div>
+        <div className="space-y-2">
+          <h2 className="font-bold">Próximas escalas</h2>
+          {opened.schedules?.filter((schedule: any) => schedule.status === 'published' && schedule.date >= new Date().toISOString().slice(0, 10))
+            .sort((first: any, second: any) => first.date.localeCompare(second.date))
+            .map((schedule: any) => <p key={schedule.id}>{formatDatePtBR(schedule.date)} · {schedule.title}</p>)}
+          {!opened.schedules?.some((schedule: any) => schedule.status === 'published' && schedule.date >= new Date().toISOString().slice(0, 10)) &&
+            <p className="text-muted-foreground">Nenhuma escala publicada para os próximos dias.</p>}
+        </div>
+      </Card>
+    </div>
+  );
+
   return (
     <div className="p-5 sm:p-6 lg:p-10 max-w-[1000px] mx-auto w-full animate-in fade-in duration-300">
       <div className="mb-10">
@@ -83,36 +118,20 @@ export function MeusMinisteriosView({ user, userMemberships = [], onRefreshMembe
 
       <div className="space-y-10">
         <section>
-          <SectionHeader title="Ministérios Ativos" badge={String(approvedMinistries.length)} />
-          {approvedMinistries.length === 0 ? (
+          <SectionHeader title="Ministérios Ativos" badge={String(visibleMinistries.length)} />
+          {visibleMinistries.length === 0 ? (
             <Card className="p-8 text-center border-dashed rounded-3xl">
               <Users className="w-10 h-10 text-muted-foreground opacity-40 mx-auto mb-3" />
               <p className="font-extrabold text-lg">Nenhum ministério ativo</p>
               <p className="text-sm text-muted-foreground">Você ainda não faz parte de nenhum ministério aprovado.</p>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {approvedMinistries.map((m: any) => {
-                const min = m.ministries;
-                const minName = min?.name || 'Ministério';
-                const isLeader = m.role === 'leader' || m.role === 'admin';
-                return (
-                  <Card key={m.id} hoverable className="flex items-center justify-between group p-6 rounded-3xl border-border">
-                    <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 bg-primary/20 text-primary rounded-2xl flex items-center justify-center shrink-0 border border-primary/20">
-                        {getMinistryIconComponent(minName)}
-                      </div>
-                      <div>
-                        <h3 className="font-extrabold text-xl mb-1">{minName}</h3>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="success">Aprovado</Badge>
-                          {isLeader && <Badge variant="primary">Líder</Badge>}
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,15rem),1fr))] gap-5">
+              {visibleMinistries.map((ministry: any) => (
+                <MinistryCard key={ministry.id} ministry={ministry} leaders={leadersFor(ministry.id)}
+                  member={approvedMinistries.some((membership: any) => membership.ministry_id === ministry.id)}
+                  onOpen={() => setQuery({ ministerio: ministry.id })} />
+              ))}
             </div>
           )}
         </section>
@@ -147,12 +166,12 @@ export function MeusMinisteriosView({ user, userMemberships = [], onRefreshMembe
           </section>
         )}
 
-        <div className="pt-10 border-t border-border flex justify-center">
+        {!canManage && <div className="pt-10 border-t border-border flex justify-center">
           <Button variant="secondary" size="lg" className="font-extrabold rounded-2xl cursor-pointer" onClick={handleOpenModal}>
             <Users className="w-5 h-5 mr-2" />
             Solicitar entrada em novo ministério
           </Button>
-        </div>
+        </div>}
       </div>
 
       {/* Modal de Solicitação de Novo Ministério */}
@@ -280,7 +299,7 @@ export function AdminMinisteriosView({ navigateTo }: any) {
 
     setSubmitting(true);
     try {
-      const { error } = previewData('ministries', 'insert', {
+      const { error } = await saveData('ministries', 'insert', {
           name: name.trim(),
           description: description.trim() || null,
           icon: icon.trim() || 'Users',
@@ -500,7 +519,7 @@ export function AdminMinisterioDetalhesView({ ministry, navigateTo }: any) {
 
     setSubmittingRole(true);
     try {
-      const { error } = previewData('ministry_roles', 'insert', {
+      const { error } = await saveData('ministry_roles', 'insert', {
           ministry_id: ministry.id,
           name: newRoleName.trim()
         }, () => true, { single: false, limit: undefined, order: undefined });
@@ -520,7 +539,7 @@ export function AdminMinisterioDetalhesView({ ministry, navigateTo }: any) {
 
   const handleDeleteRole = async (roleId: string) => {
     try {
-      const { error } = previewData('ministry_roles', 'delete', undefined, (row: any) => getField(row, 'id') === roleId, { single: false, limit: undefined, order: undefined });
+      const { error } = await saveData('ministry_roles', 'delete', undefined, (row: any) => getField(row, 'id') === roleId, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
 
@@ -534,7 +553,7 @@ export function AdminMinisterioDetalhesView({ ministry, navigateTo }: any) {
   const handleToggleMemberRole = async (memberId: string, currentRole: string) => {
     const newRole = currentRole === 'leader' ? 'volunteer' : 'leader';
     try {
-      const { error } = previewData('ministry_members', 'update', { role: newRole }, (row: any) => getField(row, 'id') === memberId, { single: false, limit: undefined, order: undefined });
+      const { error } = await saveData('ministry_members', 'update', { role: newRole }, (row: any) => getField(row, 'id') === memberId, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
 
@@ -547,7 +566,7 @@ export function AdminMinisterioDetalhesView({ ministry, navigateTo }: any) {
 
   const handleRemoveMember = async (memberId: string) => {
     try {
-      const { error } = previewData('ministry_members', 'delete', undefined, (row: any) => getField(row, 'id') === memberId, { single: false, limit: undefined, order: undefined });
+      const { error } = await saveData('ministry_members', 'delete', undefined, (row: any) => getField(row, 'id') === memberId, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
 
@@ -564,7 +583,7 @@ export function AdminMinisterioDetalhesView({ ministry, navigateTo }: any) {
 
     setSubmittingEdit(true);
     try {
-      const { error } = previewData('ministries', 'update', {
+      const { error } = await saveData('ministries', 'update', {
           name: name.trim(),
           description: description.trim() || null
         }, (row: any) => getField(row, 'id') === ministry.id, { single: false, limit: undefined, order: undefined });

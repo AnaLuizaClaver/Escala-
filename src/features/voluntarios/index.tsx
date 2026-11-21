@@ -9,7 +9,7 @@ Users
 } from 'lucide-react';
 import React,{ useEffect,useState } from 'react';
 import { toast } from 'sonner';
-import { getField,previewData } from '../../mocks/previewData';
+import { getField,previewData,saveData } from '../../mocks/previewData';
 
 import { Avatar,Badge,Button,Card,Modal,SectionHeader,formatDatePtBR,getMinistryIconComponent } from '../../shared/ui';
 
@@ -252,7 +252,7 @@ export function AdminVoluntarioPerfilView({ voluntario, navigateTo }: any) {
     const now = new Date();
     try {
       const minId = honorMinistryId || (voluntario.ministry_members?.[0]?.ministries?.id) || null;
-      const { error } = previewData('volunteer_of_month', 'insert', {
+      const { error } = await saveData('volunteer_of_month', 'insert', {
           volunteer_id: voluntario.id,
           ministry_id: minId,
           month: now.getMonth() + 1,

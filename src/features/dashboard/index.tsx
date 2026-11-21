@@ -5,7 +5,7 @@ Moon,Sun
 } from 'lucide-react';
 import { useEffect,useState } from 'react';
 import { toast } from 'sonner';
-import { getField,previewData } from '../../mocks/previewData';
+import { getField,previewData,saveData } from '../../mocks/previewData';
 
 import { AniversariosCard,Button,Card,EscalaAbertaCard,ProximoCultoCard,SectionHeader,VoluntarioMesCard } from '../../shared/ui';
 
@@ -63,7 +63,7 @@ export function HomeView({ toggleTheme, isDarkMode, navigateTo, onTrocaClick, un
   }, [userMemberships])
 
   const handleConfirmarPresenca = async (scheduleMemberId: string) => {
-    const { error } = previewData('schedule_members', 'update', {
+    const { error } = await saveData('schedule_members', 'update', {
         response: 'confirmed',
         response_at: new Date().toISOString()
       }, (row: any) => getField(row, 'id') === scheduleMemberId, { single: false, limit: undefined, order: undefined })
@@ -83,7 +83,7 @@ export function HomeView({ toggleTheme, isDarkMode, navigateTo, onTrocaClick, un
       return
     }
 
-    const { error } = previewData('schedule_members', 'update', {
+    const { error } = await saveData('schedule_members', 'update', {
         ministry_member_id: matchingMember.id,
         response: 'confirmed',
         response_at: new Date().toISOString()

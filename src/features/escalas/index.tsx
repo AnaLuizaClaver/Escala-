@@ -9,7 +9,7 @@ Music
 } from 'lucide-react';
 import { useEffect,useState } from 'react';
 import { toast } from 'sonner';
-import { getField,previewData } from '../../mocks/previewData';
+import { getField,previewData,saveData } from '../../mocks/previewData';
 
 import { Avatar,Badge,Button,Card,Modal,SectionHeader,cn,formatFullDatePtBR,formatTimePtBR } from '../../shared/ui';
 
@@ -265,7 +265,7 @@ export function DetalhesView({ escala, onBack, onOpenTroca, onOpenSong, user, us
 
   const handleConfirmPresence = async () => {
     if (!mySlot?.id) return;
-    const { error } = previewData('schedule_members', 'update', {
+    const { error } = await saveData('schedule_members', 'update', {
         response: 'confirmed',
         response_at: new Date().toISOString()
       }, (row: any) => getField(row, 'id') === mySlot.id, { single: false, limit: undefined, order: undefined });
@@ -293,7 +293,7 @@ export function DetalhesView({ escala, onBack, onOpenTroca, onOpenSong, user, us
       return;
     }
 
-    const { error } = previewData('schedule_members', 'update', {
+    const { error } = await saveData('schedule_members', 'update', {
         ministry_member_id: matchingMember.id,
         response: 'confirmed',
         response_at: new Date().toISOString()
@@ -544,7 +544,7 @@ export function TrocaModal({ isOpen, onClose, slot, userMemberships }: any) {
 
     setSubmitting(true);
     try {
-      const { error } = previewData('schedule_swap_requests', 'insert', {
+      const { error } = await saveData('schedule_swap_requests', 'insert', {
           schedule_member_id: slot.id,
           requester_id: requesterMemberId,
           target_member_id: targetMemberId || null,

@@ -1,34 +1,47 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
-import { BrowserRouter } from 'react-router';
+import { BrowserRouter, Navigate, useLocation, useNavigate } from 'react-router';
 import { BellRing, LogOut, RefreshCw, X } from 'lucide-react';
 import AuthLayout from '../../app/AuthLayout';
 import BrandLogo from '../../shared/ui/BrandLogo';
 import { Button } from '../../app/components/ui/button';
 import AuthScreen from './AuthScreen';
 import { avatarUrl, finishAvatar } from './avatar';
-import MinistryCard, { type Ministry, type MinistryLeader } from './MinistryCard';
+import type { Ministry } from './MinistryCard';
 import PendingMinistryScreen from './PendingMinistryScreen';
 import { isMinistryOption } from './ministry-options';
-import OnlineAdmin, { type AdminPerson, type Membership } from './OnlineAdmin';
+import { isPublicPath, pathForView } from '../../app/router/routes';
 
-export default function OnlineAccess({ client }: { client: SupabaseClient }) {
+export type OnlineAccount = { session: Session; isAdmin: boolean; photo?: string };
+type AccessProps = { client: SupabaseClient; renderApp: (account: OnlineAccount) => ReactNode };
+
+export default function OnlineAccess({ client, renderApp }: AccessProps) {
+  return <BrowserRouter basename={import.meta.env.BASE_URL}><OnlineSession client={client} renderApp={renderApp} /></BrowserRouter>;
+}
+
+function OnlineSession({ client, renderApp }: AccessProps) {
   const [session, setSession] = useState<Session | null>();
+  const previousSession = useRef<Session | null | undefined>(undefined);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const { data: { subscription } } = client.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: { subscription } } = client.auth.onAuthStateChange((event, nextSession) => {
+      if ((event === 'SIGNED_IN' && previousSession.current === null) || event === 'SIGNED_OUT') {
+        navigate(pathForView('home'), { replace: true });
+      }
+      previousSession.current = nextSession;
       setSession(nextSession);
     });
     return () => subscription.unsubscribe();
-  }, [client]);
+  }, [client, navigate]);
 
   return (
-    <BrowserRouter basename={import.meta.env.BASE_URL}>
+    <>
       {session === undefined ? <AuthLayout><p role="status">Verificando sessão…</p></AuthLayout>
-        : session ? <MinistryAccess key={session.user.id} client={client} userId={session.user.id}
+        : session ? <MinistryAccess key={session.user.id} client={client} session={session} renderApp={renderApp}
           requestedMinistry={session.user.user_metadata?.requested_ministry} />
         : <AuthScreen client={client} />}
-    </BrowserRouter>
+    </>
   );
 }
 
@@ -36,9 +49,7 @@ type AccessData = {
   profile: { full_name: string; role: string };
   photo?: string;
   ministries: Ministry[];
-  leaders: MinistryLeader[];
-  memberships: Membership[];
-  people: AdminPerson[];
+  memberships: { id: string; user_id: string; ministry_id: string; status: string }[];
 };
 
 function readDismissedApprovals(userId: string): string[] {
@@ -50,7 +61,9 @@ function readDismissedApprovals(userId: string): string[] {
   }
 }
 
-function MinistryAccess({ client, userId, requestedMinistry }: { client: SupabaseClient; userId: string; requestedMinistry: unknown }) {
+function MinistryAccess({ client, session, renderApp, requestedMinistry }: AccessProps & { session: Session; requestedMinistry: unknown }) {
+  const userId = session.user.id;
+  const { pathname } = useLocation();
   const [data, setData] = useState<AccessData>();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -60,6 +73,7 @@ function MinistryAccess({ client, userId, requestedMinistry }: { client: Supabas
   const [selectedMinistry, setSelectedMinistry] = useState('');
 
   const isAdmin = data?.profile.role === 'admin';
+  const adminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
   const pending = data?.memberships.filter(row => row.status === 'pending') ?? [];
   const waiting = !isAdmin && pending.some(row => row.user_id === userId)
     && !data?.memberships.some(row => row.user_id === userId && row.status === 'approved');
@@ -79,33 +93,28 @@ function MinistryAccess({ client, userId, requestedMinistry }: { client: Supabas
       } catch {
         if (current) setPhotoError(true);
       }
-      const [profile, ministries, memberships, leaders] = await Promise.all([
+      const [profile, ministries, memberships] = await Promise.all([
         client.from('profiles').select('full_name, role, avatar_url').eq('id', userId).single(),
         client.from('ministries').select('id, name, active, description, icon, color').order('name'),
-        client.from('ministry_members').select('id, user_id, ministry_id, status'),
-        client.rpc('ministry_leader_names'),
+        client.from('ministry_members').select('id, user_id, ministry_id, status').eq('user_id', userId),
       ]);
-      if (profile.error || ministries.error || memberships.error || leaders.error) throw new Error();
-      let visibleMemberships = memberships.data as Membership[];
+      if (profile.error || ministries.error || memberships.error) throw new Error();
+      let visibleMemberships = memberships.data;
       const initialMinistry = isMinistryOption(requestedMinistry) && ministries.data.find(
         ministry => ministry.active && ministry.name === requestedMinistry,
       );
-      if (initialMinistry && !visibleMemberships.some(row => row.user_id === userId)) {
+      if (profile.data.role !== 'admin' && initialMinistry && !visibleMemberships.some(row => row.user_id === userId)) {
         const request = await client.from('ministry_members')
           .upsert({ user_id: userId, ministry_id: initialMinistry.id }, { onConflict: 'user_id,ministry_id', ignoreDuplicates: true });
         if (request.error) throw request.error;
-        const fresh = await client.from('ministry_members').select('id, user_id, ministry_id, status');
+        const fresh = await client.from('ministry_members').select('id, user_id, ministry_id, status').eq('user_id', userId);
         if (fresh.error) throw fresh.error;
         visibleMemberships = fresh.data;
       }
-      const people = profile.data.role === 'admin'
-        ? await client.from('profiles').select('id, full_name').order('full_name')
-        : { data: [], error: null };
-      if (people.error) throw new Error();
       const photo = profile.data.avatar_url === `${userId}/profile` ? await avatarUrl(client, userId) : undefined;
       if (current) {
         setError('');
-        setData({ profile: profile.data, photo, ministries: ministries.data, memberships: visibleMemberships, leaders: leaders.data, people: people.data });
+        setData({ profile: profile.data, photo, ministries: ministries.data, memberships: visibleMemberships });
       }
     }
     void load().catch(() => {
@@ -138,9 +147,6 @@ function MinistryAccess({ client, userId, requestedMinistry }: { client: Supabas
   const approved = activeMemberships.filter(row => !dismissedApprovals.includes(row.id));
   const availableMinistries = data?.ministries.filter(ministry => ministry.active && isMinistryOption(ministry.name)
     && !ownMemberships.some(row => row.ministry_id === ministry.id)) ?? [];
-  const myMinistries = data?.ministries.filter(ministry => isMinistryOption(ministry.name)
-    && activeMemberships.some(row => row.ministry_id === ministry.id)) ?? [];
-
   function dismissApprovals() {
     const read = [...dismissedApprovals, ...approved.map(row => row.id)];
     setDismissedApprovals(read);
@@ -151,16 +157,27 @@ function MinistryAccess({ client, userId, requestedMinistry }: { client: Supabas
     }
   }
 
-  function decide(id: string, status: 'approved' | 'rejected') {
-    return mutate(() => client.from('ministry_members').update({ status })
-      .eq('id', id).eq('status', 'pending').select('id').single());
-  }
+  if (waiting && !error && pathname !== '/aguardando-aprovacao') return <Navigate to="/aguardando-aprovacao" replace />;
 
-  if (isAdmin && data) return (
-    <OnlineAdmin name={data.profile.full_name} photo={data.photo} ministries={data.ministries}
-      people={data.people} memberships={data.memberships} busy={busy} error={error} refresh={refresh}
-      signOut={() => void mutate(() => client.auth.signOut(), false)} decide={(id, status) => void decide(id, status)} />
-  );
+  if (data && (isAdmin || activeMemberships.length > 0)) {
+    if (pathname === '/' || isPublicPath(pathname) || (adminRoute && !isAdmin)) {
+      return <Navigate to={pathForView('home')} replace />;
+    }
+    return <>
+      {!isAdmin && approved.length > 0 && (
+        <div className="fixed bottom-24 right-4 z-40 flex max-w-sm items-start gap-3 rounded-2xl border border-primary bg-card p-4 shadow-xl md:bottom-4" role="status">
+          <BellRing size={20} className="mt-1 shrink-0" aria-hidden="true" />
+          <div>
+            <p className="font-extrabold">Você foi aceito!</p>
+            <p className="text-sm">Bem-vindo à equipe de {approved.map(row =>
+              data.ministries.find(ministry => ministry.id === row.ministry_id)?.name ?? 'um ministério').join(', ')}.</p>
+          </div>
+          <Button size="icon" variant="ghost" aria-label="Dispensar aviso" onClick={dismissApprovals}><X size={17} /></Button>
+        </div>
+      )}
+      {renderApp({ session, isAdmin, photo: data.photo })}
+    </>;
+  }
 
   return (
     <main className="mx-auto min-h-screen w-full space-y-6 p-5 sm:space-y-8 sm:p-8 lg:w-4/5 lg:px-0">
@@ -174,15 +191,6 @@ function MinistryAccess({ client, userId, requestedMinistry }: { client: Supabas
       {error && <p className="rounded-xl bg-destructive/10 p-3 text-sm text-destructive" role="alert">{error}</p>}
       {photoError && <p className="text-sm text-muted-foreground" role="status">A foto ainda não foi salva. Clique em Atualizar para tentar novamente.</p>}
       {!data && !error && <p role="status">Carregando ministérios…</p>}
-      {!isAdmin && approved.length > 0 && <div className="flex items-start gap-3 rounded-2xl border border-primary bg-primary/20 p-4" role="status">
-        <BellRing size={20} className="mt-1 shrink-0" aria-hidden="true" />
-        <div className="flex-1">
-          <p className="font-extrabold">Você foi aceito!</p>
-          <p className="text-sm">Bem-vindo à equipe de {approved.map(row =>
-            data?.ministries.find(ministry => ministry.id === row.ministry_id)?.name ?? 'um ministério').join(', ')}.</p>
-        </div>
-        <Button size="icon" variant="ghost" aria-label="Dispensar aviso" onClick={dismissApprovals}><X size={17} /></Button>
-      </div>}
       {waiting && data ? <PendingMinistryScreen names={data.ministries.filter(ministry =>
         pending.some(row => row.user_id === userId && row.ministry_id === ministry.id)).map(ministry => ministry.name)} />
       : data && <>
@@ -190,7 +198,7 @@ function MinistryAccess({ client, userId, requestedMinistry }: { client: Supabas
           {data.photo && <img className="size-12 rounded-full object-cover" src={data.photo} alt="Sua foto de perfil" />}
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight">Olá, {data.profile.full_name}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Conta de voluntário</p>
+            <p className="mt-1 text-sm text-muted-foreground">{isAdmin ? 'Visão de membro · acesso administrativo' : 'Conta de voluntário'}</p>
           </div>
         </div>
         {!isAdmin && activeMemberships.length === 0 && <section className="max-w-xl space-y-4 rounded-3xl border border-border bg-card p-5">
@@ -213,21 +221,6 @@ function MinistryAccess({ client, userId, requestedMinistry }: { client: Supabas
             <Button type="submit" disabled={busy}>Enviar pedido</Button>
           </form> : <p className="text-sm text-muted-foreground">Converse com a liderança para revisar seu acesso.</p>}
         </section>}
-        {!isAdmin && activeMemberships.length > 0 && (
-          <section aria-labelledby="ministry-heading">
-            <h2 id="ministry-heading" className="text-xl font-extrabold">Meus ministérios</h2>
-            <p className="mb-4 mt-1 text-sm text-muted-foreground">Acompanhe as equipes em que você serve.</p>
-            {myMinistries.length === 0 && <p>Nenhum dos seus ministérios está disponível nesta etapa do Escalaê.</p>}
-            <ul className="grid max-w-[52rem] grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] gap-4">
-              {myMinistries.map(ministry => (
-                <li key={ministry.id}>
-                  <MinistryCard ministry={ministry} leaders={data.leaders.filter(leader => leader.ministry_id === ministry.id)} />
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
       </>}
     </main>
   );

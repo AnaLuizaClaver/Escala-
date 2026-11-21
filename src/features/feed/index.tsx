@@ -8,7 +8,7 @@ Trophy
 } from 'lucide-react';
 import { useEffect,useState } from 'react';
 import { toast } from 'sonner';
-import { getField,previewData } from '../../mocks/previewData';
+import { getField,previewData,saveData } from '../../mocks/previewData';
 
 import { Avatar,Badge,Button,Card,cn,formatDatePtBR,formatTimePtBR } from '../../shared/ui';
 
@@ -114,7 +114,7 @@ export function FeedView({ user, userMemberships }: any) {
       return;
     }
 
-    const { error } = previewData('schedule_members', 'update', {
+    const { error } = await saveData('schedule_members', 'update', {
         ministry_member_id: matchingMember.id,
         response: 'confirmed',
         response_at: new Date().toISOString()

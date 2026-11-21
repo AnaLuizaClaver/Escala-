@@ -6,7 +6,7 @@ ShieldCheck
 } from 'lucide-react';
 import { useEffect,useState } from 'react';
 import { toast } from 'sonner';
-import { getField,previewData } from '../../mocks/previewData';
+import { getField,hasOnlineTables,previewData,saveData } from '../../mocks/previewData';
 
 import { Avatar,Badge,Button,Card,cn,formatDatePtBR,formatTimePtBR } from '../../shared/ui';
 
@@ -44,7 +44,7 @@ export function AdminSolicitacoesView({ navigateTo }: any) {
 
   const handleApproveMember = async (id: string) => {
     try {
-      const { error } = previewData('ministry_members', 'update', { status: 'approved' }, (row: any) => getField(row, 'id') === id, { single: false, limit: undefined, order: undefined });
+      const { error } = await saveData('ministry_members', 'update', { status: 'approved' }, (row: any) => row.id === id && row.status === 'pending', { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
 
@@ -57,31 +57,35 @@ export function AdminSolicitacoesView({ navigateTo }: any) {
 
   const handleRejectMember = async (id: string) => {
     try {
-      const { error } = previewData('ministry_members', 'delete', undefined, (row: any) => getField(row, 'id') === id, { single: false, limit: undefined, order: undefined });
+      const { error } = await saveData('ministry_members', 'update', { status: 'rejected' }, (row: any) => row.id === id && row.status === 'pending', { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
 
       toast.info('Solicitação de entrada recusada.');
-      setMemberRequests(prev => prev.filter(m => m.id !== id));
+      setMemberRequests(prev => prev.map(m => m.id === id ? { ...m, status: 'rejected' } : m));
     } catch (err: any) {
       toast.error('Erro ao recusar: ' + err.message);
     }
   };
 
   const handleApproveSwap = async (swap: any) => {
+    if (hasOnlineTables()) {
+      toast.error('A aprovação de trocas ainda não está disponível online.');
+      return;
+    }
     try {
-      const { error: swapError } = previewData('schedule_swap_requests', 'update', { status: 'approved' }, (row: any) => getField(row, 'id') === swap.id, { single: false, limit: undefined, order: undefined });
+      const { error: swapError } = await saveData('schedule_swap_requests', 'update', { status: 'approved' }, (row: any) => getField(row, 'id') === swap.id, { single: false, limit: undefined, order: undefined });
 
       if (swapError) throw swapError;
 
       if (swap.target_member_id && swap.schedule_member_id) {
-        previewData('schedule_members', 'update', {
+        await saveData('schedule_members', 'update', {
             ministry_member_id: swap.target_member_id,
             response: 'confirmed',
             response_at: new Date().toISOString()
           }, (row: any) => getField(row, 'id') === swap.schedule_member_id, { single: false, limit: undefined, order: undefined });
       } else if (swap.schedule_member_id) {
-        previewData('schedule_members', 'update', {
+        await saveData('schedule_members', 'update', {
             ministry_member_id: null,
             response: 'pending',
             response_at: null
@@ -97,7 +101,7 @@ export function AdminSolicitacoesView({ navigateTo }: any) {
 
   const handleRejectSwap = async (swapId: string) => {
     try {
-      const { error } = previewData('schedule_swap_requests', 'update', { status: 'rejected' }, (row: any) => getField(row, 'id') === swapId, { single: false, limit: undefined, order: undefined });
+      const { error } = await saveData('schedule_swap_requests', 'update', { status: 'rejected' }, (row: any) => getField(row, 'id') === swapId, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
 
@@ -116,14 +120,15 @@ export function AdminSolicitacoesView({ navigateTo }: any) {
       const matchStatus = 
         filterStatus === 'Todas' || 
         (filterStatus === 'Pendentes' && m.status === 'pending') ||
-        (filterStatus === 'Aprovadas' && m.status === 'approved');
+        (filterStatus === 'Aprovadas' && m.status === 'approved') ||
+        (filterStatus === 'Recusadas' && m.status === 'rejected');
       
       if (matchStatus) {
         combinedItems.push({
           type: 'ENTRADA EM MINISTÉRIO',
           id: m.id,
           createdAt: m.created_at,
-          status: m.status === 'pending' ? 'Pendente' : 'Aprovada',
+          status: m.status === 'pending' ? 'Pendente' : m.status === 'approved' ? 'Aprovada' : 'Recusada',
           personName: m.profiles?.full_name || 'Voluntário',
           personAvatar: m.profiles?.avatar_url,
           personPhone: m.profiles?.phone,
@@ -178,6 +183,9 @@ export function AdminSolicitacoesView({ navigateTo }: any) {
             <ShieldCheck className="w-4 h-4 text-primary" /> Gerenciamento
           </p>
           <h1 className="text-3xl sm:text-4xl font-extrabold">Central de Solicitações</h1>
+          {hasOnlineTables() && <Button variant="outline" size="sm" className="mt-3" onClick={() => window.location.reload()}>
+            Atualizar solicitações
+          </Button>}
         </div>
       </div>
 

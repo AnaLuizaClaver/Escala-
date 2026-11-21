@@ -7,7 +7,7 @@ Trophy
 } from 'lucide-react';
 import React,{ useEffect,useState } from 'react';
 import { toast } from 'sonner';
-import { getField,previewData } from '../../mocks/previewData';
+import { getField,hasOnlineTables,previewData,saveData } from '../../mocks/previewData';
 
 import { Button,Card,Modal,cn,formatDatePtBR } from '../../shared/ui';
 import { FeedPost } from '../feed';
@@ -73,7 +73,7 @@ export function AdminFeedView({ user, userProfile, navigateTo }: any) {
 
     setSubmittingPost(true);
     try {
-      const { error } = previewData('feed_posts', 'insert', {
+      const { error } = await saveData('feed_posts', 'insert', {
           author_id: user?.id,
           ministry_id: postMinistryId ? postMinistryId : null,
           type: postType,
@@ -100,7 +100,7 @@ export function AdminFeedView({ user, userProfile, navigateTo }: any) {
     if (!window.confirm('Tem certeza que deseja excluir esta publicação?')) return;
 
     try {
-      const { error } = previewData('feed_posts', 'delete', undefined, (row: any) => getField(row, 'id') === postId, { single: false, limit: undefined, order: undefined });
+      const { error } = await saveData('feed_posts', 'delete', undefined, (row: any) => getField(row, 'id') === postId, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
       toast.success('Publicação removida com sucesso.');
@@ -112,6 +112,10 @@ export function AdminFeedView({ user, userProfile, navigateTo }: any) {
 
   const handlePublishHonor = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (hasOnlineTables()) {
+      toast.error('Use a área de Voluntários para registrar o destaque do mês.');
+      return;
+    }
     if (!honorVolunteerId) {
       toast.error('Selecione um voluntário.');
       return;
@@ -123,7 +127,7 @@ export function AdminFeedView({ user, userProfile, navigateTo }: any) {
       const selectedVol = volunteers.find(v => v.id === honorVolunteerId);
 
       // 1. Inserir em volunteer_of_month
-      previewData('volunteer_of_month', 'insert', {
+      await saveData('volunteer_of_month', 'insert', {
           volunteer_id: honorVolunteerId,
           ministry_id: honorMinistryId || null,
           month: now.getMonth() + 1,
@@ -132,7 +136,7 @@ export function AdminFeedView({ user, userProfile, navigateTo }: any) {
         }, () => true, { single: false, limit: undefined, order: undefined });
 
       // 2. Criar post no feed comemorando
-      previewData('feed_posts', 'insert', {
+      await saveData('feed_posts', 'insert', {
           author_id: user?.id,
           ministry_id: honorMinistryId || null,
           type: '🎉 Aniversário',

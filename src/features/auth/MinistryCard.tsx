@@ -1,4 +1,4 @@
-import { CheckCircle2, UsersRound } from 'lucide-react';
+import { ArrowRight, CheckCircle2, UsersRound } from 'lucide-react';
 
 export type Ministry = {
   id: string;
@@ -18,9 +18,11 @@ const coverByMinistry: Record<string, string> = {
   'Recepção & Boas-Vindas': 'recepcao-3d.jpg',
 };
 
-export default function MinistryCard({ ministry, leaders }: {
+export default function MinistryCard({ ministry, leaders, member, onOpen }: {
   ministry: Ministry;
   leaders: MinistryLeader[];
+  member: boolean;
+  onOpen: () => void;
 }) {
   const color = /^#[a-f\d]{6}$/i.test(ministry.color ?? '') ? ministry.color : '#c6ff4d';
   const cover = coverByMinistry[ministry.name];
@@ -65,9 +67,14 @@ export default function MinistryCard({ ministry, leaders }: {
             )}
           </div>
         </div>
-        <p className="flex min-h-10 items-center gap-2 rounded-xl bg-green-950 px-3 py-1 text-sm font-bold text-green-200">
-          <CheckCircle2 size={16} aria-hidden="true" /> Você faz parte da equipe
-        </p>
+        {member && <p className="flex items-center gap-2 text-xs font-bold text-green-200">
+          <CheckCircle2 size={15} aria-hidden="true" /> Você faz parte da equipe
+        </p>}
+        <button type="button" onClick={onOpen} aria-label={`Abrir ${ministry.name}`}
+          className="flex min-h-10 w-full items-center justify-between rounded-full px-4 text-sm font-bold text-black hover:brightness-110"
+          style={{ backgroundColor: color ?? undefined }}>
+          Abrir ministério <ArrowRight size={16} aria-hidden="true" />
+        </button>
       </div>
     </article>
   );

@@ -23,7 +23,7 @@ const AdminFeedView = React.lazy(() => import('../../features/admin-feed').then(
 const AdminRelatoriosView = React.lazy(() => import('../../features/relatorios').then(m => ({ default: m.AdminRelatoriosView })));
 
 export default function RouteContent() {
-  const { currentView, navigateTo, setTrocaModalOpen, toggleTheme, isDarkMode, user, userProfile, userMemberships, unreadNotificationsCount, selectedEscala, setSelectedTrocaSlot, setSelectedSongModal, refreshUserData, showLogin } = useOutletContext<any>();
+  const { currentView, navigateTo, setTrocaModalOpen, toggleTheme, isDarkMode, user, userProfile, userMemberships, unreadNotificationsCount, selectedEscala, setSelectedTrocaSlot, setSelectedSongModal, refreshUserData, showLogin, canManage } = useOutletContext<any>();
   return (<React.Suspense fallback={<div className="p-8 text-sm font-bold text-muted-foreground">Carregando...</div>}>
           {currentView === 'home' && (
             <HomeView 
@@ -63,7 +63,8 @@ export default function RouteContent() {
             <MeusMinisteriosView 
               user={user} 
               userMemberships={userMemberships} 
-              onRefreshMemberships={refreshUserData} 
+              onRefreshMemberships={refreshUserData}
+              canManage={canManage}
             />
           )}
           {currentView === 'conquistas' && (

@@ -15,7 +15,7 @@ Users
 } from 'lucide-react';
 import { useEffect,useState } from 'react';
 import { toast } from 'sonner';
-import { getField,previewData } from '../../mocks/previewData';
+import { getField,hasOnlineTables,previewData,saveData } from '../../mocks/previewData';
 
 import { Avatar,Badge,Button,Card,SectionHeader,formatDatePtBR,formatTimePtBR } from '../../shared/ui';
 
@@ -87,19 +87,23 @@ export function AdminDashboardView({ navigateTo, user, userProfile, toggleTheme,
   }, []);
 
   const handleApproveSwap = async (swap: any) => {
+    if (hasOnlineTables()) {
+      toast.error('A aprovação de trocas ainda não está disponível online.');
+      return;
+    }
     try {
-      const { error: swapError } = previewData('schedule_swap_requests', 'update', { status: 'approved' }, (row: any) => getField(row, 'id') === swap.id, { single: false, limit: undefined, order: undefined });
+      const { error: swapError } = await saveData('schedule_swap_requests', 'update', { status: 'approved' }, (row: any) => getField(row, 'id') === swap.id, { single: false, limit: undefined, order: undefined });
 
       if (swapError) throw swapError;
 
       if (swap.target_member_id && swap.schedule_member_id) {
-        previewData('schedule_members', 'update', {
+        await saveData('schedule_members', 'update', {
             ministry_member_id: swap.target_member_id,
             response: 'confirmed',
             response_at: new Date().toISOString()
           }, (row: any) => getField(row, 'id') === swap.schedule_member_id, { single: false, limit: undefined, order: undefined });
       } else if (swap.schedule_member_id) {
-        previewData('schedule_members', 'update', {
+        await saveData('schedule_members', 'update', {
             ministry_member_id: null,
             response: 'pending',
             response_at: null
@@ -115,7 +119,7 @@ export function AdminDashboardView({ navigateTo, user, userProfile, toggleTheme,
 
   const handleRejectSwap = async (swapId: string) => {
     try {
-      const { error } = previewData('schedule_swap_requests', 'update', { status: 'rejected' }, (row: any) => getField(row, 'id') === swapId, { single: false, limit: undefined, order: undefined });
+      const { error } = await saveData('schedule_swap_requests', 'update', { status: 'rejected' }, (row: any) => getField(row, 'id') === swapId, { single: false, limit: undefined, order: undefined });
 
       if (error) throw error;
       toast.info('Solicitação de troca recusada.');

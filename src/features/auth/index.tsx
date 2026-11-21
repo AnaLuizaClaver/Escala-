@@ -13,7 +13,7 @@ import { AnimatePresence,motion } from 'motion/react';
 import React,{ useEffect,useState } from 'react';
 import { toast } from 'sonner';
 import { usePreview } from '../../hooks/usePreview';
-import { getField,previewData } from '../../mocks/previewData';
+import { getField,previewData,saveData } from '../../mocks/previewData';
 
 import { Badge,Button,Card,cn,getMinistryIconComponent } from '../../shared/ui';
 
@@ -333,7 +333,7 @@ export function SelectMinistryView({ onNext }: any) {
       status: 'pending',
     }))
 
-    const { error: insertError } = previewData('ministry_members', 'insert', rows, () => true, { single: false, limit: undefined, order: undefined })
+    const { error: insertError } = await saveData('ministry_members', 'insert', rows, () => true, { single: false, limit: undefined, order: undefined })
 
     setSubmitting(false)
 
