@@ -224,6 +224,9 @@ export default function AuthScreen({ client }: { client: SupabaseClient }) {
           {!googleEnabled && <small>Indisponível</small>}
         </button>
       </div>
+      <a href={`${import.meta.env.BASE_URL}app/`} className="mt-4 block text-center text-sm font-semibold text-accent-foreground hover:underline">
+        Abrir app do voluntário
+      </a>
     </section>
   </AuthLayout>;
 }

@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "Escalaê",
+    "slug": "escalae",
+    "scheme": "escalae",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/escalae-primary.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2732FF"
+    },
+    "ios": {
+      "bundleIdentifier": "app.escalae.voluntario",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "app.escalae.voluntario",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/pulo.png",
+        "backgroundColor": "#C6FF4D"
+      }
+    },
+    "web": {
+      "favicon": "./assets/icon.png"
+    },
+    "plugins": [
+      "expo-font"
+    ]
+  }
+}

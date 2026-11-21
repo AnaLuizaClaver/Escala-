@@ -26,6 +26,9 @@ jobs:
         with:
           node-version: '24'
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            mobile/package-lock.json
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d
         id: pages
       - run: npm ci
@@ -37,6 +40,14 @@ jobs:
           VITE_GOOGLE_AUTH_ENABLED: 'true'
           PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
         run: npm run build -- --base "${PAGES_BASE_PATH%/}/"
+      - name: Build the installable volunteer app
+        env:
+          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+        run: |
+          npm --prefix mobile ci
+          ESCALAE_PWA_BASE="${PAGES_BASE_PATH%/}/app" npm --prefix mobile run build:pwa
+          mkdir -p dist/app
+          cp -a mobile/dist/pwa/. dist/app/
       - name: Serve the app on direct links
         run: cp dist/index.html dist/404.html
       - name: Name the Pages artifact
