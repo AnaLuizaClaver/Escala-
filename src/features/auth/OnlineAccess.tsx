@@ -9,6 +9,7 @@ import AuthScreen from './AuthScreen';
 import { avatarUrl, finishAvatar } from './avatar';
 import MinistryCard, { type Ministry, type MinistryLeader } from './MinistryCard';
 import PendingMinistryScreen from './PendingMinistryScreen';
+import { isMinistryOption } from './ministry-options';
 
 export default function OnlineAccess({ client }: { client: SupabaseClient }) {
   const [session, setSession] = useState<Session | null>();
@@ -24,14 +25,14 @@ export default function OnlineAccess({ client }: { client: SupabaseClient }) {
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       {session === undefined ? <AuthLayout><p role="status">Verificando sessão…</p></AuthLayout>
         : session ? <main className="mx-auto min-h-screen w-full p-5 sm:p-8 lg:w-4/5 lg:px-0">
-          <MinistryAccess key={session.user.id} client={client} userId={session.user.id} />
+          <MinistryAccess key={session.user.id} client={client} userId={session.user.id}
+            requestedMinistry={session.user.user_metadata?.requested_ministry} />
         </main> : <AuthScreen client={client} />}
     </BrowserRouter>
   );
 }
 
 type Membership = { id: string; user_id: string; ministry_id: string; status: 'pending' | 'approved' | 'rejected' };
-const featuredMinistries = new Set(['Louvor & Adoração', 'Mídia & Transmissão']);
 type AccessData = {
   profile: { full_name: string; role: string };
   photo?: string;
@@ -50,17 +51,19 @@ function readDismissedApprovals(userId: string): string[] {
   }
 }
 
-function MinistryAccess({ client, userId }: { client: SupabaseClient; userId: string }) {
+function MinistryAccess({ client, userId, requestedMinistry }: { client: SupabaseClient; userId: string; requestedMinistry: unknown }) {
   const [data, setData] = useState<AccessData>();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [revision, setRevision] = useState(0);
   const [photoError, setPhotoError] = useState(false);
   const [dismissedApprovals, setDismissedApprovals] = useState(() => readDismissedApprovals(userId));
+  const [selectedMinistry, setSelectedMinistry] = useState('');
 
   const isAdmin = data?.profile.role === 'admin';
   const pending = data?.memberships.filter(row => row.status === 'pending') ?? [];
-  const waiting = !isAdmin && pending.some(row => row.user_id === userId);
+  const waiting = !isAdmin && pending.some(row => row.user_id === userId)
+    && !data?.memberships.some(row => row.user_id === userId && row.status === 'approved');
 
   useEffect(() => {
     if (!waiting) return;
@@ -84,7 +87,19 @@ function MinistryAccess({ client, userId }: { client: SupabaseClient; userId: st
         client.rpc('ministry_leader_names'),
       ]);
       if (profile.error || ministries.error || memberships.error || leaders.error) throw new Error();
-      const pendingUsers = [...new Set(memberships.data.filter(row => row.status === 'pending').map(row => row.user_id))];
+      let visibleMemberships = memberships.data as Membership[];
+      const initialMinistry = isMinistryOption(requestedMinistry) && ministries.data.find(
+        ministry => ministry.active && ministry.name === requestedMinistry,
+      );
+      if (initialMinistry && !visibleMemberships.some(row => row.user_id === userId)) {
+        const request = await client.from('ministry_members')
+          .upsert({ user_id: userId, ministry_id: initialMinistry.id }, { onConflict: 'user_id,ministry_id', ignoreDuplicates: true });
+        if (request.error) throw request.error;
+        const fresh = await client.from('ministry_members').select('id, user_id, ministry_id, status');
+        if (fresh.error) throw fresh.error;
+        visibleMemberships = fresh.data;
+      }
+      const pendingUsers = [...new Set(visibleMemberships.filter(row => row.status === 'pending').map(row => row.user_id))];
       const applicants = profile.data.role === 'admin' && pendingUsers.length
         ? await client.from('profiles').select('id, full_name').in('id', pendingUsers)
         : { data: [], error: null };
@@ -92,14 +107,14 @@ function MinistryAccess({ client, userId }: { client: SupabaseClient; userId: st
       const photo = profile.data.avatar_url === `${userId}/profile` ? await avatarUrl(client, userId) : undefined;
       if (current) {
         setError('');
-        setData({ profile: profile.data, photo, ministries: ministries.data, memberships: memberships.data, leaders: leaders.data, applicants: applicants.data });
+        setData({ profile: profile.data, photo, ministries: ministries.data, memberships: visibleMemberships, leaders: leaders.data, applicants: applicants.data });
       }
     }
     void load().catch(() => {
       if (current) setError('Não foi possível carregar a conta ou os ministérios.');
     });
     return () => { current = false; };
-  }, [client, userId, revision]);
+  }, [client, userId, requestedMinistry, revision]);
 
   function refresh() {
     setError('');
@@ -120,9 +135,13 @@ function MinistryAccess({ client, userId }: { client: SupabaseClient; userId: st
     }
   }
 
-  const approved = data?.memberships.filter(row => row.user_id === userId
-    && row.status === 'approved' && !dismissedApprovals.includes(row.id)) ?? [];
-  const visibleMinistries = data?.ministries.filter(ministry => featuredMinistries.has(ministry.name)) ?? [];
+  const ownMemberships = data?.memberships.filter(row => row.user_id === userId) ?? [];
+  const activeMemberships = ownMemberships.filter(row => row.status === 'approved');
+  const approved = activeMemberships.filter(row => !dismissedApprovals.includes(row.id));
+  const availableMinistries = data?.ministries.filter(ministry => ministry.active && isMinistryOption(ministry.name)
+    && !ownMemberships.some(row => row.ministry_id === ministry.id)) ?? [];
+  const myMinistries = data?.ministries.filter(ministry => isMinistryOption(ministry.name)
+    && activeMemberships.some(row => row.ministry_id === ministry.id)) ?? [];
 
   function dismissApprovals() {
     const read = [...dismissedApprovals, ...approved.map(row => row.id)];
@@ -170,22 +189,40 @@ function MinistryAccess({ client, userId }: { client: SupabaseClient; userId: st
             <p className="mt-1 text-sm text-muted-foreground">{isAdmin ? 'Conta de administrador' : 'Conta de voluntário'}</p>
           </div>
         </div>
-        <div className={isAdmin ? 'grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]' : undefined}>
+        {!isAdmin && activeMemberships.length === 0 && <section className="max-w-xl space-y-4 rounded-3xl border border-border bg-card p-5">
+          <h2 className="text-xl font-extrabold">Pedido de entrada</h2>
+          {ownMemberships.some(row => row.status === 'rejected') &&
+            <p className="text-sm text-muted-foreground">Seu pedido anterior foi recusado.</p>}
+          {availableMinistries.length > 0 ? <form className="space-y-4" onSubmit={event => {
+            event.preventDefault();
+            if (!availableMinistries.some(ministry => ministry.id === selectedMinistry)) return;
+            void mutate(() => client.from('ministry_members').insert({ user_id: userId, ministry_id: selectedMinistry }));
+          }}>
+            <label className="block space-y-2 text-sm">
+              <span className="font-bold">Onde você quer servir?</span>
+              <select required value={selectedMinistry} onChange={event => setSelectedMinistry(event.target.value)}
+                className="block w-full rounded-xl border border-border bg-background p-3">
+                <option value="" disabled>Selecione um ministério</option>
+                {availableMinistries.map(ministry => <option key={ministry.id} value={ministry.id}>{ministry.name}</option>)}
+              </select>
+            </label>
+            <Button type="submit" disabled={busy}>Enviar pedido</Button>
+          </form> : <p className="text-sm text-muted-foreground">Converse com a liderança para revisar seu acesso.</p>}
+        </section>}
+        {!isAdmin && activeMemberships.length > 0 && (
           <section aria-labelledby="ministry-heading">
-            <h2 id="ministry-heading" className="text-xl font-extrabold">Ministérios</h2>
-            <p className="mb-4 mt-1 text-sm text-muted-foreground">Conheça as equipes e encontre um lugar para servir.</p>
-            {visibleMinistries.length === 0 && <p>Nenhum ministério disponível.</p>}
+            <h2 id="ministry-heading" className="text-xl font-extrabold">Meus ministérios</h2>
+            <p className="mb-4 mt-1 text-sm text-muted-foreground">Acompanhe as equipes em que você serve.</p>
+            {myMinistries.length === 0 && <p>Nenhum dos seus ministérios está disponível nesta etapa do Escalaê.</p>}
             <ul className="grid max-w-[52rem] grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] gap-4">
-              {visibleMinistries.map(ministry => {
-                const membership = data.memberships.find(row => row.user_id === userId && row.ministry_id === ministry.id);
-                return <li key={ministry.id}>
-                  <MinistryCard ministry={ministry} leaders={data.leaders.filter(leader => leader.ministry_id === ministry.id)}
-                    status={membership?.status} busy={busy} onRequest={() => void mutate(() =>
-                      client.from('ministry_members').insert({ user_id: userId, ministry_id: ministry.id }))} />
-                </li>;
-              })}
+              {myMinistries.map(ministry => (
+                <li key={ministry.id}>
+                  <MinistryCard ministry={ministry} leaders={data.leaders.filter(leader => leader.ministry_id === ministry.id)} />
+                </li>
+              ))}
             </ul>
           </section>
+        )}
           {isAdmin && <section aria-labelledby="requests-heading" className="rounded-3xl border border-border bg-card p-5 shadow-sm">
             <div className="mb-4 flex items-center gap-2">
               <ClipboardList size={21} aria-hidden="true" />
@@ -208,7 +245,6 @@ function MinistryAccess({ client, userId }: { client: SupabaseClient; userId: st
               ))}
             </ul>
           </section>}
-        </div>
       </>}
     </div>
   );

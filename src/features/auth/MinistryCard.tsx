@@ -1,5 +1,4 @@
-import { ArrowRight, CheckCircle2, Clock3, UsersRound, XCircle } from 'lucide-react';
-import { Button } from '../../app/components/ui/button';
+import { CheckCircle2, UsersRound } from 'lucide-react';
 
 export type Ministry = {
   id: string;
@@ -19,38 +18,10 @@ const coverByMinistry: Record<string, string> = {
   'Recepção & Boas-Vindas': 'recepcao-3d.jpg',
 };
 
-const membershipStatuses = {
-  pending: {
-    label: 'Aguardando aprovação',
-    icon: Clock3,
-    classes: 'bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-200',
-  },
-  approved: {
-    label: 'Você faz parte da equipe',
-    icon: CheckCircle2,
-    classes: 'bg-green-50 text-green-900 dark:bg-green-950 dark:text-green-200',
-  },
-  rejected: {
-    label: 'Pedido recusado',
-    icon: XCircle,
-    classes: 'bg-rose-50 text-rose-900 dark:bg-rose-950 dark:text-rose-200',
-  },
-};
-
-export default function MinistryCard({
-  ministry,
-  leaders,
-  status,
-  busy,
-  onRequest,
-}: {
+export default function MinistryCard({ ministry, leaders }: {
   ministry: Ministry;
   leaders: MinistryLeader[];
-  status?: keyof typeof membershipStatuses;
-  busy: boolean;
-  onRequest: () => void;
 }) {
-  const badge = status ? membershipStatuses[status] : undefined;
   const color = /^#[a-f\d]{6}$/i.test(ministry.color ?? '') ? ministry.color : '#c6ff4d';
   const cover = coverByMinistry[ministry.name];
 
@@ -94,26 +65,9 @@ export default function MinistryCard({
             )}
           </div>
         </div>
-        {badge ? (
-          <p
-            className={`flex min-h-10 items-center gap-2 rounded-xl px-3 py-1 text-sm font-bold ${badge.classes}`}
-          >
-            <badge.icon size={16} aria-hidden="true" /> {badge.label}
-          </p>
-        ) : ministry.active ? (
-          <Button
-            type="button"
-            className="min-h-10 w-full justify-between rounded-full text-black hover:brightness-110"
-            style={{ backgroundColor: color ?? undefined }}
-            aria-label={`Quero servir em ${ministry.name}`}
-            disabled={busy}
-            onClick={onRequest}
-          >
-            Quero servir <ArrowRight size={16} aria-hidden="true" />
-          </Button>
-        ) : (
-          <p className="text-sm text-white/75">Ministério inativo</p>
-        )}
+        <p className="flex min-h-10 items-center gap-2 rounded-xl bg-green-950 px-3 py-1 text-sm font-bold text-green-200">
+          <CheckCircle2 size={16} aria-hidden="true" /> Você faz parte da equipe
+        </p>
       </div>
     </article>
   );

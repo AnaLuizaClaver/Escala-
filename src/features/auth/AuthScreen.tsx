@@ -2,8 +2,11 @@ import { useState, type FormEvent } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { ArrowRight, Camera, Eye, EyeOff, Mail } from 'lucide-react';
 import AuthLayout from '../../app/AuthLayout';
+import BrandLogo from '../../shared/ui/BrandLogo';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../app/components/ui/tabs';
 import { avatarTypes, maxAvatarBytes, readPhoto, rememberAvatar, saveAvatar } from './avatar';
+import { isMinistryOption, ministryOptions } from './ministry-options';
+import PendingMinistryScreen from './PendingMinistryScreen';
 import './auth.css';
 
 const googleEnabled = import.meta.env.VITE_GOOGLE_AUTH_ENABLED === 'true';
@@ -36,13 +39,13 @@ export default function AuthScreen({ client }: { client: SupabaseClient }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const [registered, setRegistered] = useState(false);
+  const [registeredMinistry, setRegisteredMinistry] = useState('');
 
   function changeTab(value: string) {
     setTab(value);
     setError('');
     setNotice('');
-    setRegistered(false);
+    setRegisteredMinistry('');
     setPhoto(undefined);
     setPreview('');
   }
@@ -87,13 +90,15 @@ export default function AuthScreen({ client }: { client: SupabaseClient }) {
     const values = new FormData(event.currentTarget);
     const email = String(values.get('email')).trim();
     const fullName = String(values.get('full_name')).trim();
+    const ministry = values.get('ministry');
     await run(async () => {
       if (!fullName) throw new Error('Informe seu nome.');
+      if (!isMinistryOption(ministry)) throw new Error('Escolha um ministério.');
       const { data, error: authError } = await client.auth.signUp({
         email,
         password: String(values.get('password')),
         options: {
-          data: { full_name: fullName, username: String(values.get('username')).trim().toLowerCase() },
+          data: { full_name: fullName, username: String(values.get('username')).trim().toLowerCase(), requested_ministry: ministry },
           emailRedirectTo: returnUrl(),
         },
       });
@@ -110,8 +115,7 @@ export default function AuthScreen({ client }: { client: SupabaseClient }) {
       }
       if (!data.session) {
         setIdentifier(email);
-        setRegistered(true);
-        setNotice('Confira seu e-mail para confirmar o cadastro. Depois, volte para entrar.');
+        setRegisteredMinistry(ministry);
       }
     });
   }
@@ -144,6 +148,19 @@ export default function AuthScreen({ client }: { client: SupabaseClient }) {
     });
   }
 
+  if (registeredMinistry) return (
+    <main className="mx-auto min-h-screen w-full space-y-5 p-5 sm:p-8 lg:w-4/5 lg:px-0">
+      <header className="rounded-2xl bg-brand-surface px-4 py-2"><BrandLogo /></header>
+      <PendingMinistryScreen names={[registeredMinistry]} needsEmailConfirmation />
+      {error && <p role="alert">{error}</p>}
+      {notice && <p role="status">{notice}</p>}
+      <div className="flex flex-wrap gap-4 text-sm font-semibold text-primary">
+        <button type="button" onClick={() => changeTab('login')}>Voltar para entrar</button>
+        <button type="button" disabled={busy} onClick={() => void resend()}>Reenviar confirmação por e-mail</button>
+      </div>
+    </main>
+  );
+
   return <AuthLayout fullWidth>
     <section className="access-card" aria-label="Acesso ao Escalaê">
       <Tabs value={tab} onValueChange={changeTab}>
@@ -171,8 +188,7 @@ export default function AuthScreen({ client }: { client: SupabaseClient }) {
         <TabsContent value="register">
           <h1>Crie sua conta</h1>
           <p className="access-intro">Preencha seus dados para começar a servir com sua equipe.</p>
-          {registered ? <button type="button" className="access-primary" onClick={() => changeTab('login')}>Voltar para entrar <ArrowRight size={18} /></button>
-            : <form className="access-form" onSubmit={register}>
+          <form className="access-form" onSubmit={register}>
               <label className="access-photo">
                 <span className="access-photo-icon">{preview ? <img src={preview} alt="Prévia da foto escolhida" /> : <Camera size={21} />}</span>
                 <span><strong>{preview ? 'Trocar foto de perfil' : 'Adicionar foto de perfil'}</strong><small>Opcional · JPG, PNG ou WebP · até 1,5 MB</small></span>
@@ -185,9 +201,15 @@ export default function AuthScreen({ client }: { client: SupabaseClient }) {
                 <small id="username-help">De 3 a 24 caracteres: letras, números e _.</small>
               </label>
               <label className="access-field">E-mail<input name="email" type="email" autoComplete="email" placeholder="voce@exemplo.com" required /></label>
+              <label className="access-field">Ministério
+                <select name="ministry" required defaultValue="">
+                  <option value="" disabled>Onde você quer servir?</option>
+                  {ministryOptions.map(name => <option key={name} value={name}>{name}</option>)}
+                </select>
+              </label>
               <Password creating />
               <button className="access-primary" disabled={busy}>{busy ? 'Aguarde…' : 'Criar conta'} <ArrowRight size={18} /></button>
-            </form>}
+            </form>
         </TabsContent>
       </Tabs>
       {error && <p className="access-feedback access-error" role="alert">{error}</p>}

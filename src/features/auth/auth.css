@@ -27,7 +27,7 @@
 .access-intro { margin: .65rem 0 1.4rem; color: var(--muted-foreground); font-size: .9rem; }
 .access-form { display: grid; gap: .9rem; }
 .access-field { display: grid; gap: .35rem; font-size: .85rem; font-weight: 650; }
-.access-field input {
+.access-field :is(input, select) {
   width: 100%;
   min-height: 2.8rem;
   padding: .55rem .75rem;
@@ -38,7 +38,7 @@
   font-weight: 400;
 }
 
-.access-card :is(input, button):focus-visible, .access-photo:focus-within { outline: 2px solid var(--ring); outline-offset: 2px; }
+.access-card :is(input, button, select):focus-visible, .access-photo:focus-within { outline: 2px solid var(--ring); outline-offset: 2px; }
 .access-password { position: relative; display: block; }
 .access-password input { padding-inline-end: 3rem; }
 .access-password button { position: absolute; inset-inline-end: 0; inset-block: 0; display: grid; place-items: center; width: 2.75rem; }
