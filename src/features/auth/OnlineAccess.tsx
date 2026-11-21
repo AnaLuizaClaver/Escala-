@@ -31,6 +31,7 @@ export default function OnlineAccess({ client }: { client: SupabaseClient }) {
 }
 
 type Membership = { id: string; user_id: string; ministry_id: string; status: 'pending' | 'approved' | 'rejected' };
+const featuredMinistries = new Set(['Louvor & Adoração', 'Mídia & Transmissão']);
 type AccessData = {
   profile: { full_name: string; role: string };
   photo?: string;
@@ -121,6 +122,7 @@ function MinistryAccess({ client, userId }: { client: SupabaseClient; userId: st
 
   const approved = data?.memberships.filter(row => row.user_id === userId
     && row.status === 'approved' && !dismissedApprovals.includes(row.id)) ?? [];
+  const visibleMinistries = data?.ministries.filter(ministry => featuredMinistries.has(ministry.name)) ?? [];
 
   function dismissApprovals() {
     const read = [...dismissedApprovals, ...approved.map(row => row.id)];
@@ -172,9 +174,9 @@ function MinistryAccess({ client, userId }: { client: SupabaseClient; userId: st
           <section aria-labelledby="ministry-heading">
             <h2 id="ministry-heading" className="text-xl font-extrabold">Ministérios</h2>
             <p className="mb-4 mt-1 text-sm text-muted-foreground">Conheça as equipes e encontre um lugar para servir.</p>
-            {data.ministries.length === 0 && <p>Nenhum ministério disponível.</p>}
-            <ul className={`grid gap-4 sm:grid-cols-2 ${isAdmin ? '' : 'xl:grid-cols-3'}`}>
-              {data.ministries.map(ministry => {
+            {visibleMinistries.length === 0 && <p>Nenhum ministério disponível.</p>}
+            <ul className="grid max-w-[52rem] grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] gap-4">
+              {visibleMinistries.map(ministry => {
                 const membership = data.memberships.find(row => row.user_id === userId && row.ministry_id === ministry.id);
                 return <li key={ministry.id}>
                   <MinistryCard ministry={ministry} leaders={data.leaders.filter(leader => leader.ministry_id === ministry.id)}

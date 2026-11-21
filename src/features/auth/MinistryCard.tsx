@@ -55,7 +55,7 @@ export default function MinistryCard({
   const cover = coverByMinistry[ministry.name];
 
   return (
-    <article className="group relative isolate flex h-full min-h-[25rem] flex-col justify-end overflow-hidden rounded-[1.6rem] border-2 bg-[#101322] text-white shadow-lg motion-safe:transition-transform motion-safe:hover:-translate-y-1 sm:min-h-[28rem]" style={{ borderColor: color ?? undefined }}>
+    <article className="group relative isolate flex aspect-[4/5] w-full flex-col justify-end overflow-hidden rounded-[1.6rem] border-2 bg-[#101322] text-white shadow-lg motion-safe:transition-transform motion-safe:hover:-translate-y-1" style={{ borderColor: color ?? undefined }}>
       <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
         {cover && (
           <img
@@ -74,7 +74,7 @@ export default function MinistryCard({
         style={{ backgroundColor: color ?? undefined }} aria-hidden="true">
         {ministry.icon || <UsersRound size={19} />}
       </div>
-      <div className="flex flex-col gap-3 px-4 pb-4 pt-40 sm:px-5 sm:pb-5">
+      <div className="max-h-full space-y-2.5 overflow-y-auto px-4 pb-4 pt-4 sm:px-5 sm:pb-5">
         <h3 className="text-xl font-extrabold leading-tight tracking-tight sm:text-2xl" style={{ color: color ?? undefined }}>{ministry.name}</h3>
         <p className="text-sm leading-relaxed text-white/85">
           {ministry.description || 'A equipe ainda não adicionou uma descrição.'}
@@ -96,14 +96,14 @@ export default function MinistryCard({
         </div>
         {badge ? (
           <p
-            className={`flex min-h-10 items-center gap-2 rounded-xl px-3 text-sm font-bold ${badge.classes}`}
+            className={`flex min-h-10 items-center gap-2 rounded-xl px-3 py-1 text-sm font-bold ${badge.classes}`}
           >
             <badge.icon size={16} aria-hidden="true" /> {badge.label}
           </p>
         ) : ministry.active ? (
           <Button
             type="button"
-            className="min-h-10 justify-between rounded-full text-black hover:brightness-110"
+            className="min-h-10 w-full justify-between rounded-full text-black hover:brightness-110"
             style={{ backgroundColor: color ?? undefined }}
             aria-label={`Quero servir em ${ministry.name}`}
             disabled={busy}
