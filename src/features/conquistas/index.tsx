@@ -171,20 +171,22 @@ export function ConquistasView({ navigateTo, user, userMemberships = [] }: any) 
               <p className="text-sm text-muted-foreground">Confirme presença e sirva nas escalas para conquistar suas primeiras badges!</p>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {unlockedBadges.map(badge => (
-                <Card key={badge.id} className="text-center p-6 sm:p-8 flex flex-col items-center hover:-translate-y-1 transition-transform rounded-3xl border-border">
-                  <div className={cn("w-20 h-20 rounded-full flex items-center justify-center mb-6 shadow-sm", badge.bg)}>
-                    {badge.icon}
+            <ul className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-4">
+              {unlockedBadges.map((badge, index) => (
+                <li key={badge.id} className="mx-auto w-full max-w-40 text-center">
+                  <div className={cn("relative mx-auto grid aspect-square w-[min(100%,6.25rem)] -rotate-3 place-items-center rounded-[1.4rem] border-[3px] border-white text-brand-night shadow-[0_0_0_2px_var(--brand-night),3px_5px_0_2px_var(--brand-night)]",
+                    ['bg-brand-blue', 'bg-brand-purple', 'bg-brand-lime'][index % 3])}>
+                    <span aria-hidden="true" className="absolute right-2 top-1 text-xs text-white">✦</span>
+                    <span className="grid size-12 place-items-center rounded-full border-2 border-brand-night bg-brand-cream [&_svg]:size-5 [&_svg]:text-brand-night">
+                      {badge.icon}
+                    </span>
                   </div>
-                  <h3 className="font-extrabold text-lg mb-2">{badge.title}</h3>
-                  <p className="text-sm font-semibold text-muted-foreground">{badge.desc}</p>
-                  <div className="mt-4 pt-4 border-t border-border w-full flex justify-center">
-                    <Badge variant="success">Desbloqueada ✓</Badge>
-                  </div>
-                </Card>
+                  <h3 className="mt-3 text-sm font-bold leading-tight">{badge.title}</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">{badge.desc}</p>
+                  <span className="sr-only">Desbloqueada</span>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </section>
 
